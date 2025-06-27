@@ -1,11 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Search, Filter, Trash2, Edit, Calendar, User, Building, MapPin, UserCheck, RefreshCw } from 'lucide-react';
 
 const BookingOverview = () => {
   const [bookings, setBookings] = useState([]);
@@ -17,8 +10,8 @@ const BookingOverview = () => {
     search: '',
     belegung: '',
     berater: '',
-    status: '',
-    platzierung: ''
+    status: 'all', // Standardwert statt leer
+    platzierung: 'all' // Standardwert statt leer
   });
 
   // Konvertiert ISO Datum zu tt.mm.jjjj Format
@@ -82,12 +75,12 @@ const BookingOverview = () => {
     }
 
     // Status Filter
-    if (filters.status) {
+    if (filters.status && filters.status !== 'all') {
       filtered = filtered.filter(booking => booking.status === filters.status);
     }
 
     // Platzierung Filter
-    if (filters.platzierung) {
+    if (filters.platzierung && filters.platzierung !== 'all') {
       filtered = filtered.filter(booking => booking.platzierung.toString() === filters.platzierung);
     }
 
@@ -140,214 +133,204 @@ const BookingOverview = () => {
       search: '',
       belegung: '',
       berater: '',
-      status: '',
-      platzierung: ''
+      status: 'all',
+      platzierung: 'all'
     });
   };
 
   if (loading) {
     return (
-      <Card className="w-full">
-        <CardContent className="flex items-center justify-center py-8">
-          <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+      <div className="w-full bg-white p-8 rounded-lg shadow-md">
+        <div className="flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
           Buchungen werden geladen...
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   return (
     <div className="w-full space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Buchungsübersicht
-          </CardTitle>
-          <CardDescription>
-            Verwalten und filtern Sie alle Buchungen
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Filter Section */}
-          <div className="space-y-4 mb-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                Filter
-              </h3>
-              <Button variant="outline" size="sm" onClick={clearFilters}>
-                Filter zurücksetzen
-              </Button>
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+          📅 Buchungsübersicht
+        </h2>
+        <p className="text-gray-600 mb-6">Verwalten und filtern Sie alle Buchungen</p>
+
+        {/* Filter Section */}
+        <div className="space-y-4 mb-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium flex items-center gap-2">
+              🔍 Filter
+            </h3>
+            <button
+              onClick={clearFilters}
+              className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Filter zurücksetzen
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+                🔍 Suche
+              </label>
+              <input
+                type="text"
+                placeholder="Name, Nummer, Belegung..."
+                value={filters.search}
+                onChange={(e) => handleFilterChange('search', e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="search" className="flex items-center gap-2">
-                  <Search className="h-4 w-4" />
-                  Suche
-                </Label>
-                <Input
-                  id="search"
-                  placeholder="Name, Nummer, Belegung..."
-                  value={filters.search}
-                  onChange={(e) => handleFilterChange('search', e.target.value)}
-                />
-              </div>
 
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Building className="h-4 w-4" />
-                  Belegung
-                </Label>
-                <Input
-                  placeholder="z.B. Gastronomie"
-                  value={filters.belegung}
-                  onChange={(e) => handleFilterChange('belegung', e.target.value)}
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+                🏢 Belegung
+              </label>
+              <input
+                type="text"
+                placeholder="z.B. Gastronomie"
+                value={filters.belegung}
+                onChange={(e) => handleFilterChange('belegung', e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
 
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <UserCheck className="h-4 w-4" />
-                  Berater
-                </Label>
-                <Input
-                  placeholder="z.B. Anna Schmidt"
-                  value={filters.berater}
-                  onChange={(e) => handleFilterChange('berater', e.target.value)}
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+                👨‍💼 Berater
+              </label>
+              <input
+                type="text"
+                placeholder="z.B. Anna Schmidt"
+                value={filters.berater}
+                onChange={(e) => handleFilterChange('berater', e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
 
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Alle Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Alle Status</SelectItem>
-                    <SelectItem value="frei">Frei</SelectItem>
-                    <SelectItem value="reserviert">Reserviert</SelectItem>
-                    <SelectItem value="gebucht">Gebucht</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Status</label>
+              <select
+                value={filters.status}
+                onChange={(e) => handleFilterChange('status', e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all">Alle Status</option>
+                <option value="frei">Frei</option>
+                <option value="reserviert">Reserviert</option>
+                <option value="gebucht">Gebucht</option>
+              </select>
+            </div>
 
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  Platzierung
-                </Label>
-                <Select value={filters.platzierung} onValueChange={(value) => handleFilterChange('platzierung', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Alle Platzierungen" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Alle Platzierungen</SelectItem>
-                    {[1, 2, 3, 4, 5, 6].map(num => (
-                      <SelectItem key={num} value={num.toString()}>
-                        Platzierung {num}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div>
+              <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+                📍 Platzierung
+              </label>
+              <select
+                value={filters.platzierung}
+                onChange={(e) => handleFilterChange('platzierung', e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all">Alle Platzierungen</option>
+                {[1, 2, 3, 4, 5, 6].map(num => (
+                  <option key={num} value={num.toString()}>Platzierung {num}</option>
+                ))}
+              </select>
+            </div>
 
-              <div className="flex items-end">
-                <Button onClick={fetchBookings} variant="outline" className="w-full">
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Aktualisieren
-                </Button>
-              </div>
+            <div className="flex items-end">
+              <button
+                onClick={fetchBookings}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center justify-center gap-2"
+              >
+                🔄 Aktualisieren
+              </button>
             </div>
           </div>
+        </div>
 
-          {error && (
-            <div className="p-3 rounded-md bg-red-50 text-red-700 border border-red-200 mb-4">
-              {error}
-            </div>
-          )}
-
-          {/* Results Summary */}
-          <div className="mb-4 text-sm text-gray-600">
-            {filteredBookings.length} von {bookings.length} Buchungen angezeigt
+        {error && (
+          <div className="p-3 rounded-md bg-red-50 text-red-700 border border-red-200 mb-4">
+            ❌ {error}
           </div>
+        )}
 
-          {/* Table */}
-          <div className="border rounded-md">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Kunde</TableHead>
-                  <TableHead>Belegung</TableHead>
-                  <TableHead>Zeitraum</TableHead>
-                  <TableHead>Platzierung</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Berater</TableHead>
-                  <TableHead>Aktionen</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredBookings.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                      Keine Buchungen gefunden
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredBookings.map((booking) => (
-                    <TableRow key={booking.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{booking.kundenname}</div>
-                          <div className="text-sm text-gray-500">{booking.kundennummer}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{booking.belegung}</TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <div>{formatDateForDisplay(booking.zeitraum_von)}</div>
-                          <div className="text-gray-500">bis {formatDateForDisplay(booking.zeitraum_bis)}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-gray-400" />
-                          {booking.platzierung}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
-                          {booking.status}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-gray-400" />
-                          {booking.berater}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDelete(booking.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+        {/* Results Summary */}
+        <div className="mb-4 text-sm text-gray-600">
+          {filteredBookings.length} von {bookings.length} Buchungen angezeigt
+        </div>
+
+        {/* Table */}
+        <div className="border rounded-md overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Kunde</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Belegung</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Zeitraum</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Platzierung</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Status</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Berater</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Aktionen</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredBookings.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                    Keine Buchungen gefunden
+                  </td>
+                </tr>
+              ) : (
+                filteredBookings.map((booking) => (
+                  <tr key={booking.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <div>
+                        <div className="font-medium text-gray-900">{booking.kundenname}</div>
+                        <div className="text-sm text-gray-500">{booking.kundennummer}</div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{booking.belegung}</td>
+                    <td className="px-4 py-3">
+                      <div className="text-sm">
+                        <div className="text-gray-900">{formatDateForDisplay(booking.zeitraum_von)}</div>
+                        <div className="text-gray-500">bis {formatDateForDisplay(booking.zeitraum_bis)}</div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2 text-sm text-gray-900">
+                        📍 {booking.platzierung}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
+                        {booking.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2 text-sm text-gray-900">
+                        👤 {booking.berater}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => handleDelete(booking.id)}
+                        className="text-red-600 hover:text-red-700 p-1 rounded"
+                        title="Buchung löschen"
+                      >
+                        🗑️
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };
