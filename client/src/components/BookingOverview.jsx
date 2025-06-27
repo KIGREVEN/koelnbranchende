@@ -117,7 +117,7 @@ const BookingOverview = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'frei':
+      case 'vorreserviert':
         return 'bg-green-100 text-green-800';
       case 'reserviert':
         return 'bg-yellow-100 text-yellow-800';
@@ -219,7 +219,7 @@ const BookingOverview = () => {
                 className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="all">Alle Status</option>
-                <option value="frei">Frei</option>
+                <option value="vorreserviert">vorreserviert</option>
                 <option value="reserviert">Reserviert</option>
                 <option value="gebucht">Gebucht</option>
               </select>
