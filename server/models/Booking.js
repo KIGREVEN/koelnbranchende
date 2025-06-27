@@ -33,8 +33,8 @@ const bookingSchema = Joi.object({
     'number.max': 'Platzierung muss zwischen 1 und 6 liegen',
     'any.required': 'Platzierung ist erforderlich'
   }),
-  status: Joi.string().valid('frei', 'reserviert', 'gebucht').default('reserviert').messages({
-    'any.only': 'Status muss frei, reserviert oder gebucht sein'
+  status: Joi.string().valid('vorreserviert', 'reserviert', 'gebucht').default('reserviert').messages({
+    'any.only': 'Status muss vorreserviert, reserviert oder gebucht sein'
   }),
   berater: Joi.string().min(2).max(100).required().messages({
     'string.empty': 'Berater ist erforderlich',
@@ -243,7 +243,7 @@ class Booking {
     return {
       available: conflicts.length === 0,
       conflicts: conflicts,
-      status: conflicts.length === 0 ? 'frei' : 'belegt'
+      status: conflicts.length === 0 ? 'vorreserviert' : 'belegt'
     };
   }
 
@@ -251,7 +251,7 @@ class Booking {
   static async cleanupExpiredReservations() {
     const queryText = `
       UPDATE bookings 
-      SET status = 'frei', updated_at = NOW()
+      SET status = 'vorreserviert', updated_at = NOW()
       WHERE status = 'reserviert' 
         AND created_at < NOW() - INTERVAL '30 minutes'
       RETURNING *
