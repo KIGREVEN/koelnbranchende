@@ -1,15 +1,9 @@
 import { useState } from 'react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Search, Building, MapPin, CalendarDays, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 const AvailabilityChecker = () => {
   const [formData, setFormData] = useState({
     belegung: '',
-    platzierung: '',
+    platzierung: '1', // Standardwert statt leer
     zeitraum_von: '',
     zeitraum_bis: ''
   });
@@ -20,13 +14,6 @@ const AvailabilityChecker = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSelectChange = (name, value) => {
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -138,178 +125,171 @@ const AvailabilityChecker = () => {
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Verfügbarkeit prüfen
-          </CardTitle>
-          <CardDescription>
-            Prüfen Sie die Verfügbarkeit für eine bestimmte Belegung, Platzierung und Zeitraum
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="belegung" className="flex items-center gap-2">
-                  <Building className="h-4 w-4" />
-                  Belegung/Branche *
-                </Label>
-                <Input
-                  id="belegung"
-                  name="belegung"
-                  value={formData.belegung}
-                  onChange={handleInputChange}
-                  placeholder="z.B. Gastronomie, Einzelhandel"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  Platzierung *
-                </Label>
-                <Select value={formData.platzierung} onValueChange={(value) => handleSelectChange('platzierung', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Platzierung wählen" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[1, 2, 3, 4, 5, 6].map(num => (
-                      <SelectItem key={num} value={num.toString()}>
-                        Platzierung {num}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+          🔍 Verfügbarkeit prüfen
+        </h2>
+        <p className="text-gray-600 mb-6">
+          Prüfen Sie die Verfügbarkeit für eine bestimmte Belegung, Platzierung und Zeitraum
+        </p>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+                🏢 Belegung/Branche *
+              </label>
+              <input
+                type="text"
+                name="belegung"
+                value={formData.belegung}
+                onChange={handleInputChange}
+                placeholder="z.B. Gastronomie, Einzelhandel"
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="zeitraum_von" className="flex items-center gap-2">
-                  <CalendarDays className="h-4 w-4" />
-                  Startdatum *
-                </Label>
-                <Input
-                  id="zeitraum_von"
-                  name="zeitraum_von"
-                  value={formData.zeitraum_von}
-                  onChange={handleInputChange}
-                  placeholder="tt.mm.jjjj (z.B. 15.07.2024)"
-                  required
-                />
-                <p className="text-xs text-gray-500">Format: tt.mm.jjjj</p>
-              </div>
+            <div>
+              <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+                📍 Platzierung *
+              </label>
+              <select
+                name="platzierung"
+                value={formData.platzierung}
+                onChange={handleInputChange}
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              >
+                {[1, 2, 3, 4, 5, 6].map(num => (
+                  <option key={num} value={num.toString()}>Platzierung {num}</option>
+                ))}
+              </select>
+            </div>
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="zeitraum_bis" className="flex items-center gap-2">
-                  <CalendarDays className="h-4 w-4" />
-                  Enddatum *
-                </Label>
-                <Input
-                  id="zeitraum_bis"
-                  name="zeitraum_bis"
-                  value={formData.zeitraum_bis}
-                  onChange={handleInputChange}
-                  placeholder="tt.mm.jjjj (z.B. 20.07.2024)"
-                  required
-                />
-                <p className="text-xs text-gray-500">Format: tt.mm.jjjj</p>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+                📅 Startdatum *
+              </label>
+              <input
+                type="text"
+                name="zeitraum_von"
+                value={formData.zeitraum_von}
+                onChange={handleInputChange}
+                placeholder="tt.mm.jjjj (z.B. 15.07.2024)"
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">Format: tt.mm.jjjj</p>
             </div>
 
-            {error && (
-              <div className="p-3 rounded-md bg-red-50 text-red-700 border border-red-200 flex items-center gap-2">
-                <AlertCircle className="h-4 w-4" />
-                {error}
-              </div>
-            )}
+            <div>
+              <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+                📅 Enddatum *
+              </label>
+              <input
+                type="text"
+                name="zeitraum_bis"
+                value={formData.zeitraum_bis}
+                onChange={handleInputChange}
+                placeholder="tt.mm.jjjj (z.B. 20.07.2024)"
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">Format: tt.mm.jjjj</p>
+            </div>
+          </div>
 
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? 'Wird geprüft...' : 'Verfügbarkeit prüfen'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+          {error && (
+            <div className="p-4 rounded-md bg-red-50 text-red-700 border border-red-200 flex items-center gap-2">
+              ❌ {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+          >
+            {loading ? '⏳ Wird geprüft...' : '🔍 Verfügbarkeit prüfen'}
+          </button>
+        </form>
+      </div>
 
       {result && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              {result.available ? (
-                <CheckCircle className="h-5 w-5 text-green-600" />
-              ) : (
-                <XCircle className="h-5 w-5 text-red-600" />
-              )}
-              Verfügbarkeitsergebnis
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Belegung</Label>
-                  <p className="text-lg">{result.belegung}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Platzierung</Label>
-                  <p className="text-lg">Platzierung {result.platzierung}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Zeitraum</Label>
-                  <p className="text-lg">
-                    {formatDateForDisplay(result.zeitraum_von)} - {formatDateForDisplay(result.zeitraum_bis)}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Status</Label>
-                  <div className="flex items-center gap-2">
-                    {result.available ? (
-                      <>
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-green-700 font-medium">Verfügbar</span>
-                      </>
-                    ) : (
-                      <>
-                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                        <span className="text-red-700 font-medium">Nicht verfügbar</span>
-                      </>
-                    )}
-                  </div>
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+            {result.available ? (
+              <span className="text-green-600">✅ Verfügbarkeitsergebnis</span>
+            ) : (
+              <span className="text-red-600">❌ Verfügbarkeitsergebnis</span>
+            )}
+          </h3>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-600">Belegung</label>
+                <p className="text-lg font-semibold">{result.belegung}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-600">Platzierung</label>
+                <p className="text-lg font-semibold">Platzierung {result.platzierung}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-600">Zeitraum</label>
+                <p className="text-lg font-semibold">
+                  {formatDateForDisplay(result.zeitraum_von)} - {formatDateForDisplay(result.zeitraum_bis)}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-600">Status</label>
+                <div className="flex items-center gap-2">
+                  {result.available ? (
+                    <>
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <span className="text-green-700 font-semibold">Verfügbar</span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                      <span className="text-red-700 font-semibold">Nicht verfügbar</span>
+                    </>
+                  )}
                 </div>
               </div>
-
-              {result.conflicts && result.conflicts.length > 0 && (
-                <div className="mt-4">
-                  <Label className="text-sm font-medium text-gray-600">Konflikte</Label>
-                  <div className="mt-2 space-y-2">
-                    {result.conflicts.map((conflict, index) => (
-                      <div key={index} className="p-3 bg-red-50 border border-red-200 rounded-md">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-medium text-red-900">{conflict.kundenname}</p>
-                            <p className="text-sm text-red-700">
-                              {formatDateForDisplay(conflict.zeitraum_von)} - {formatDateForDisplay(conflict.zeitraum_bis)}
-                            </p>
-                          </div>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            conflict.status === 'gebucht' 
-                              ? 'bg-red-100 text-red-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {conflict.status}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
-          </CardContent>
-        </Card>
+
+            {result.conflicts && result.conflicts.length > 0 && (
+              <div className="mt-6">
+                <label className="text-sm font-medium text-gray-600">Konflikte</label>
+                <div className="mt-2 space-y-2">
+                  {result.conflicts.map((conflict, index) => (
+                    <div key={index} className="p-4 bg-red-50 border border-red-200 rounded-md">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-semibold text-red-900">{conflict.kundenname}</p>
+                          <p className="text-sm text-red-700">
+                            {formatDateForDisplay(conflict.zeitraum_von)} - {formatDateForDisplay(conflict.zeitraum_bis)}
+                          </p>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          conflict.status === 'gebucht' 
+                            ? 'bg-red-100 text-red-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {conflict.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
