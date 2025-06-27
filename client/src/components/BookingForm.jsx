@@ -4,19 +4,22 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Search, Building, MapPin, CalendarDays, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { CalendarDays, User, Building, MapPin, UserCheck, AlertCircle, CheckCircle } from 'lucide-react';
 
-const AvailabilityChecker = () => {
+const BookingForm = ({ onBookingCreated }) => {
   const [formData, setFormData] = useState({
+    kundenname: '',
+    kundennummer: '',
     belegung: '',
-    platzierung: '',
     zeitraum_von: '',
-    zeitraum_bis: ''
+    zeitraum_bis: '',
+    platzierung: '',
+    status: 'reserviert',
+    berater: ''
   });
 
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState('');
+  const [message, setMessage] = useState({ type: '', text: '' });
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -33,7 +36,7 @@ const AvailabilityChecker = () => {
     }));
   };
 
-  // Konvertiert Datum von tt.mm.jjjj zu ISO Format
+  // Konvertiert Datum von tt.mm.jjjj zu ISO Format (mit 00:00:00 für Start, 23:59:59 für Ende)
   const convertDateToISO = (dateString, isEndDate = false) => {
     if (!dateString) return '';
     
@@ -55,19 +58,13 @@ const AvailabilityChecker = () => {
            date.getDate() === day;
   };
 
-  // Konvertiert ISO Datum zurück zu tt.mm.jjjj Format für Anzeige
-  const formatDateForDisplay = (isoString) => {
-    const date = new Date(isoString);
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}.${month}.${year}`;
-  };
-
   const validateForm = () => {
     const errors = [];
 
+    if (!formData.kundenname.trim()) errors.push('Kundenname ist erforderlich');
+    if (!formData.kundennummer.trim()) errors.push('Kundennummer ist erforderlich');
     if (!formData.belegung.trim()) errors.push('Belegung ist erforderlich');
+    if (!formData.berater.trim()) errors.push('Berater ist erforderlich');
     if (!formData.platzierung) errors.push('Platzierung ist erforderlich');
 
     if (!formData.zeitraum_von) {
@@ -104,216 +101,232 @@ const AvailabilityChecker = () => {
     
     const errors = validateForm();
     if (errors.length > 0) {
-      setError(errors.join(', '));
+      setMessage({ type: 'error', text: errors.join(', ') });
       return;
     }
 
     setLoading(true);
-    setError('');
-    setResult(null);
+    setMessage({ type: '', text: '' });
 
     try {
       // Konvertiere Daten für API
-      const queryParams = new URLSearchParams({
-        belegung: formData.belegung,
-        platzierung: formData.platzierung,
+      const apiData = {
+        ...formData,
         zeitraum_von: convertDateToISO(formData.zeitraum_von, false),
-        zeitraum_bis: convertDateToISO(formData.zeitraum_bis, true)
+        zeitraum_bis: convertDateToISO(formData.zeitraum_bis, true),
+        platzierung: parseInt(formData.platzierung)
+      };
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/bookings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(apiData),
       });
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/availability/check?${queryParams}`);
       const data = await response.json();
 
       if (response.ok) {
-        setResult(data.data);
+        setMessage({ type: 'success', text: 'Buchung erfolgreich erstellt!' });
+        setFormData({
+          kundenname: '',
+          kundennummer: '',
+          belegung: '',
+          zeitraum_von: '',
+          zeitraum_bis: '',
+          platzierung: '',
+          status: 'reserviert',
+          berater: ''
+        });
+        if (onBookingCreated) onBookingCreated();
       } else {
-        setError(data.message || 'Fehler beim Prüfen der Verfügbarkeit');
+        if (response.status === 409) {
+          setMessage({ 
+            type: 'error', 
+            text: 'Konflikt: Ein Termin für diese Belegung, Platzierung und Zeitraum ist bereits vorhanden.' 
+          });
+        } else {
+          setMessage({ type: 'error', text: data.message || 'Fehler beim Erstellen der Buchung' });
+        }
       }
     } catch (error) {
-      setError('Netzwerkfehler. Bitte versuchen Sie es erneut.');
+      setMessage({ type: 'error', text: 'Netzwerkfehler. Bitte versuchen Sie es erneut.' });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Verfügbarkeit prüfen
-          </CardTitle>
-          <CardDescription>
-            Prüfen Sie die Verfügbarkeit für eine bestimmte Belegung, Platzierung und Zeitraum
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="belegung" className="flex items-center gap-2">
-                  <Building className="h-4 w-4" />
-                  Belegung/Branche *
-                </Label>
-                <Input
-                  id="belegung"
-                  name="belegung"
-                  value={formData.belegung}
-                  onChange={handleInputChange}
-                  placeholder="z.B. Gastronomie, Einzelhandel"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  Platzierung *
-                </Label>
-                <Select value={formData.platzierung} onValueChange={(value) => handleSelectChange('platzierung', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Platzierung wählen" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[1, 2, 3, 4, 5, 6].map(num => (
-                      <SelectItem key={num} value={num.toString()}>
-                        Platzierung {num}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <CalendarDays className="h-5 w-5" />
+          Neue Buchung erstellen
+        </CardTitle>
+        <CardDescription>
+          Erstellen Sie eine neue Buchung für das Köln Branchen Portal
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="kundenname" className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Kundenname *
+              </Label>
+              <Input
+                id="kundenname"
+                name="kundenname"
+                value={formData.kundenname}
+                onChange={handleInputChange}
+                placeholder="Max Mustermann"
+                required
+              />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="zeitraum_von" className="flex items-center gap-2">
-                  <CalendarDays className="h-4 w-4" />
-                  Startdatum *
-                </Label>
-                <Input
-                  id="zeitraum_von"
-                  name="zeitraum_von"
-                  value={formData.zeitraum_von}
-                  onChange={handleInputChange}
-                  placeholder="tt.mm.jjjj (z.B. 15.07.2024)"
-                  required
-                />
-                <p className="text-xs text-gray-500">Format: tt.mm.jjjj</p>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="kundennummer" className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Kundennummer *
+              </Label>
+              <Input
+                id="kundennummer"
+                name="kundennummer"
+                value={formData.kundennummer}
+                onChange={handleInputChange}
+                placeholder="K-001"
+                required
+              />
+            </div>
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="zeitraum_bis" className="flex items-center gap-2">
-                  <CalendarDays className="h-4 w-4" />
-                  Enddatum *
-                </Label>
-                <Input
-                  id="zeitraum_bis"
-                  name="zeitraum_bis"
-                  value={formData.zeitraum_bis}
-                  onChange={handleInputChange}
-                  placeholder="tt.mm.jjjj (z.B. 20.07.2024)"
-                  required
-                />
-                <p className="text-xs text-gray-500">Format: tt.mm.jjjj</p>
-              </div>
+          <div className="space-y-2">
+            <Label htmlFor="belegung" className="flex items-center gap-2">
+              <Building className="h-4 w-4" />
+              Belegung/Branche *
+            </Label>
+            <Input
+              id="belegung"
+              name="belegung"
+              value={formData.belegung}
+              onChange={handleInputChange}
+              placeholder="z.B. Gastronomie, Einzelhandel, Dienstleistung"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="zeitraum_von" className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4" />
+                Startdatum *
+              </Label>
+              <Input
+                id="zeitraum_von"
+                name="zeitraum_von"
+                value={formData.zeitraum_von}
+                onChange={handleInputChange}
+                placeholder="tt.mm.jjjj (z.B. 15.07.2024)"
+                required
+              />
+              <p className="text-xs text-gray-500">Format: tt.mm.jjjj</p>
             </div>
 
-            {error && (
-              <div className="p-3 rounded-md bg-red-50 text-red-700 border border-red-200 flex items-center gap-2">
+            <div className="space-y-2">
+              <Label htmlFor="zeitraum_bis" className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4" />
+                Enddatum *
+              </Label>
+              <Input
+                id="zeitraum_bis"
+                name="zeitraum_bis"
+                value={formData.zeitraum_bis}
+                onChange={handleInputChange}
+                placeholder="tt.mm.jjjj (z.B. 20.07.2024)"
+                required
+              />
+              <p className="text-xs text-gray-500">Format: tt.mm.jjjj</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Platzierung *
+              </Label>
+              <Select value={formData.platzierung} onValueChange={(value) => handleSelectChange('platzierung', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Platzierung wählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 4, 5, 6].map(num => (
+                    <SelectItem key={num} value={num.toString()}>
+                      Platzierung {num}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
                 <AlertCircle className="h-4 w-4" />
-                {error}
-              </div>
-            )}
-
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? 'Wird geprüft...' : 'Verfügbarkeit prüfen'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      {result && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              {result.available ? (
-                <CheckCircle className="h-5 w-5 text-green-600" />
-              ) : (
-                <XCircle className="h-5 w-5 text-red-600" />
-              )}
-              Verfügbarkeitsergebnis
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Belegung</Label>
-                  <p className="text-lg">{result.belegung}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Platzierung</Label>
-                  <p className="text-lg">Platzierung {result.platzierung}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Zeitraum</Label>
-                  <p className="text-lg">
-                    {formatDateForDisplay(result.zeitraum_von)} - {formatDateForDisplay(result.zeitraum_bis)}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Status</Label>
-                  <div className="flex items-center gap-2">
-                    {result.available ? (
-                      <>
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-green-700 font-medium">Verfügbar</span>
-                      </>
-                    ) : (
-                      <>
-                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                        <span className="text-red-700 font-medium">Nicht verfügbar</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {result.conflicts && result.conflicts.length > 0 && (
-                <div className="mt-4">
-                  <Label className="text-sm font-medium text-gray-600">Konflikte</Label>
-                  <div className="mt-2 space-y-2">
-                    {result.conflicts.map((conflict, index) => (
-                      <div key={index} className="p-3 bg-red-50 border border-red-200 rounded-md">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-medium text-red-900">{conflict.kundenname}</p>
-                            <p className="text-sm text-red-700">
-                              {formatDateForDisplay(conflict.zeitraum_von)} - {formatDateForDisplay(conflict.zeitraum_bis)}
-                            </p>
-                          </div>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            conflict.status === 'gebucht' 
-                              ? 'bg-red-100 text-red-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {conflict.status}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                Status
+              </Label>
+              <Select value={formData.status} onValueChange={(value) => handleSelectChange('status', value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="frei">Frei</SelectItem>
+                  <SelectItem value="reserviert">Reserviert</SelectItem>
+                  <SelectItem value="gebucht">Gebucht</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="berater" className="flex items-center gap-2">
+              <UserCheck className="h-4 w-4" />
+              Berater *
+            </Label>
+            <Input
+              id="berater"
+              name="berater"
+              value={formData.berater}
+              onChange={handleInputChange}
+              placeholder="Anna Schmidt"
+              required
+            />
+          </div>
+
+          {message.text && (
+            <div className={`p-3 rounded-md flex items-center gap-2 ${
+              message.type === 'success' 
+                ? 'bg-green-50 text-green-700 border border-green-200' 
+                : 'bg-red-50 text-red-700 border border-red-200'
+            }`}>
+              {message.type === 'success' ? (
+                <CheckCircle className="h-4 w-4" />
+              ) : (
+                <AlertCircle className="h-4 w-4" />
+              )}
+              {message.text}
+            </div>
+          )}
+
+          <Button type="submit" disabled={loading} className="w-full">
+            {loading ? 'Wird erstellt...' : 'Buchung erstellen'}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 
-export default AvailabilityChecker;
+export default BookingForm;
 
