@@ -2,16 +2,15 @@ services:
   # PostgreSQL Database
   - type: pserv
     name: koeln-branchen-db
-    env: node
     plan: free
     region: frankfurt
 
   # Backend API Service
   - type: web
     name: koeln-branchen-api
-    env: node
-    region: frankfurt
+    runtime: node
     plan: free
+    region: frankfurt
     buildCommand: cd server && npm install
     startCommand: cd server && npm start
     healthCheckPath: /health
@@ -38,9 +37,9 @@ services:
   # Frontend Static Site
   - type: web
     name: koeln-branchen-frontend
-    env: static
-    region: frankfurt
+    runtime: static
     plan: free
+    region: frankfurt
     buildCommand: cd client && npm install && npm run build
     staticPublishPath: client/dist
     pullRequestPreviewsEnabled: false
