@@ -1,10 +1,4 @@
 import { useState } from 'react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { CalendarDays, User, Building, MapPin, UserCheck, AlertCircle, CheckCircle } from 'lucide-react';
 
 const BookingForm = ({ onBookingCreated }) => {
   const [formData, setFormData] = useState({
@@ -13,7 +7,7 @@ const BookingForm = ({ onBookingCreated }) => {
     belegung: '',
     zeitraum_von: '',
     zeitraum_bis: '',
-    platzierung: '',
+    platzierung: '1', // Standardwert statt leer
     status: 'reserviert',
     berater: ''
   });
@@ -29,14 +23,7 @@ const BookingForm = ({ onBookingCreated }) => {
     }));
   };
 
-  const handleSelectChange = (name, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  // Konvertiert Datum von tt.mm.jjjj zu ISO Format (mit 00:00:00 für Start, 23:59:59 für Ende)
+  // Konvertiert Datum von tt.mm.jjjj zu ISO Format
   const convertDateToISO = (dateString, isEndDate = false) => {
     if (!dateString) return '';
     
@@ -135,7 +122,7 @@ const BookingForm = ({ onBookingCreated }) => {
           belegung: '',
           zeitraum_von: '',
           zeitraum_bis: '',
-          platzierung: '',
+          platzierung: '1', // Zurück zum Standardwert
           status: 'reserviert',
           berater: ''
         });
@@ -158,173 +145,164 @@ const BookingForm = ({ onBookingCreated }) => {
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <CalendarDays className="h-5 w-5" />
-          Neue Buchung erstellen
-        </CardTitle>
-        <CardDescription>
-          Erstellen Sie eine neue Buchung für das Köln Branchen Portal
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="kundenname" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Kundenname *
-              </Label>
-              <Input
-                id="kundenname"
-                name="kundenname"
-                value={formData.kundenname}
-                onChange={handleInputChange}
-                placeholder="Max Mustermann"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="kundennummer" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Kundennummer *
-              </Label>
-              <Input
-                id="kundennummer"
-                name="kundennummer"
-                value={formData.kundennummer}
-                onChange={handleInputChange}
-                placeholder="K-001"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="belegung" className="flex items-center gap-2">
-              <Building className="h-4 w-4" />
-              Belegung/Branche *
-            </Label>
-            <Input
-              id="belegung"
-              name="belegung"
-              value={formData.belegung}
+    <div className="w-full max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+        📅 Neue Buchung erstellen
+      </h2>
+      <p className="text-gray-600 mb-6">Erstellen Sie eine neue Buchung für das Köln Branchen Portal</p>
+      
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+              👤 Kundenname *
+            </label>
+            <input
+              type="text"
+              name="kundenname"
+              value={formData.kundenname}
               onChange={handleInputChange}
-              placeholder="z.B. Gastronomie, Einzelhandel, Dienstleistung"
+              placeholder="Max Mustermann"
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="zeitraum_von" className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4" />
-                Startdatum *
-              </Label>
-              <Input
-                id="zeitraum_von"
-                name="zeitraum_von"
-                value={formData.zeitraum_von}
-                onChange={handleInputChange}
-                placeholder="tt.mm.jjjj (z.B. 15.07.2024)"
-                required
-              />
-              <p className="text-xs text-gray-500">Format: tt.mm.jjjj</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="zeitraum_bis" className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4" />
-                Enddatum *
-              </Label>
-              <Input
-                id="zeitraum_bis"
-                name="zeitraum_bis"
-                value={formData.zeitraum_bis}
-                onChange={handleInputChange}
-                placeholder="tt.mm.jjjj (z.B. 20.07.2024)"
-                required
-              />
-              <p className="text-xs text-gray-500">Format: tt.mm.jjjj</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                Platzierung *
-              </Label>
-              <Select value={formData.platzierung} onValueChange={(value) => handleSelectChange('platzierung', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Platzierung wählen" />
-                </SelectTrigger>
-                <SelectContent>
-                  {[1, 2, 3, 4, 5, 6].map(num => (
-                    <SelectItem key={num} value={num.toString()}>
-                      Platzierung {num}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4" />
-                Status
-              </Label>
-              <Select value={formData.status} onValueChange={(value) => handleSelectChange('status', value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="frei">Frei</SelectItem>
-                  <SelectItem value="reserviert">Reserviert</SelectItem>
-                  <SelectItem value="gebucht">Gebucht</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="berater" className="flex items-center gap-2">
-              <UserCheck className="h-4 w-4" />
-              Berater *
-            </Label>
-            <Input
-              id="berater"
-              name="berater"
-              value={formData.berater}
+          <div>
+            <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+              🆔 Kundennummer *
+            </label>
+            <input
+              type="text"
+              name="kundennummer"
+              value={formData.kundennummer}
               onChange={handleInputChange}
-              placeholder="Anna Schmidt"
+              placeholder="K-001"
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
             />
           </div>
+        </div>
 
-          {message.text && (
-            <div className={`p-3 rounded-md flex items-center gap-2 ${
-              message.type === 'success' 
-                ? 'bg-green-50 text-green-700 border border-green-200' 
-                : 'bg-red-50 text-red-700 border border-red-200'
-            }`}>
-              {message.type === 'success' ? (
-                <CheckCircle className="h-4 w-4" />
-              ) : (
-                <AlertCircle className="h-4 w-4" />
-              )}
-              {message.text}
-            </div>
-          )}
+        <div>
+          <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+            🏢 Belegung/Branche *
+          </label>
+          <input
+            type="text"
+            name="belegung"
+            value={formData.belegung}
+            onChange={handleInputChange}
+            placeholder="z.B. Gastronomie, Einzelhandel, Dienstleistung"
+            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            required
+          />
+        </div>
 
-          <Button type="submit" disabled={loading} className="w-full">
-            {loading ? 'Wird erstellt...' : 'Buchung erstellen'}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+              📅 Startdatum *
+            </label>
+            <input
+              type="text"
+              name="zeitraum_von"
+              value={formData.zeitraum_von}
+              onChange={handleInputChange}
+              placeholder="tt.mm.jjjj (z.B. 15.07.2024)"
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">Format: tt.mm.jjjj</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+              📅 Enddatum *
+            </label>
+            <input
+              type="text"
+              name="zeitraum_bis"
+              value={formData.zeitraum_bis}
+              onChange={handleInputChange}
+              placeholder="tt.mm.jjjj (z.B. 20.07.2024)"
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">Format: tt.mm.jjjj</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+              📍 Platzierung *
+            </label>
+            <select
+              name="platzierung"
+              value={formData.platzierung}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            >
+              {[1, 2, 3, 4, 5, 6].map(num => (
+                <option key={num} value={num.toString()}>Platzierung {num}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+              ⚠️ Status
+            </label>
+            <select
+              name="status"
+              value={formData.status}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="frei">Frei</option>
+              <option value="reserviert">Reserviert</option>
+              <option value="gebucht">Gebucht</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+            👨‍💼 Berater *
+          </label>
+          <input
+            type="text"
+            name="berater"
+            value={formData.berater}
+            onChange={handleInputChange}
+            placeholder="Anna Schmidt"
+            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            required
+          />
+        </div>
+
+        {message.text && (
+          <div className={`p-4 rounded-md flex items-center gap-2 ${
+            message.type === 'success' 
+              ? 'bg-green-50 text-green-700 border border-green-200' 
+              : 'bg-red-50 text-red-700 border border-red-200'
+          }`}>
+            {message.type === 'success' ? '✅' : '❌'}
+            {message.text}
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+        >
+          {loading ? '⏳ Wird erstellt...' : '✅ Buchung erstellen'}
+        </button>
+      </form>
+    </div>
   );
 };
 
