@@ -1,35 +1,17 @@
-import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { 
-  Search, 
-  Filter, 
-  Plus, 
-  Calendar, 
-  User, 
-  Building, 
-  MapPin, 
-  Clock,
-  Edit,
-  Trash2,
-  RefreshCw,
-  Download
-} from 'lucide-react'
-import { Button } from '@/components/ui/button.jsx'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
-import { Input } from '@/components/ui/input.jsx'
-import { Label } from '@/components/ui/label.jsx'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx'
-import { Alert, AlertDescription } from '@/components/ui/alert.jsx'
-import { Badge } from '@/components/ui/badge.jsx'
+import { useState, useEffect } from 'react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { Search, Filter, Trash2, Edit, Calendar, User, Building, MapPin, UserCheck, RefreshCw } from 'lucide-react';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
-
-function BookingOverview() {
-  const [bookings, setBookings] = useState([])
-  const [filteredBookings, setFilteredBookings] = useState([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [showFilters, setShowFilters] = useState(false)
+const BookingOverview = () => {
+  const [bookings, setBookings] = useState([]);
+  const [filteredBookings, setFilteredBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   
   const [filters, setFilters] = useState({
     search: '',
@@ -37,93 +19,121 @@ function BookingOverview() {
     berater: '',
     status: '',
     platzierung: ''
-  })
+  });
 
-  const statusColors = {
-    frei: 'bg-green-100 text-green-800 border-green-200',
-    reserviert: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    gebucht: 'bg-blue-100 text-blue-800 border-blue-200'
-  }
-
-  const statusLabels = {
-    frei: 'Frei',
-    reserviert: 'Reserviert',
-    gebucht: 'Gebucht'
-  }
-
-  useEffect(() => {
-    fetchBookings()
-  }, [])
-
-  useEffect(() => {
-    applyFilters()
-  }, [bookings, filters])
+  // Konvertiert ISO Datum zu tt.mm.jjjj Format
+  const formatDateForDisplay = (isoString) => {
+    const date = new Date(isoString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}.${month}.${year}`;
+  };
 
   const fetchBookings = async () => {
-    setIsLoading(true)
-    setError('')
-    
     try {
-      const response = await fetch(`${API_BASE_URL}/api/bookings`)
+      setLoading(true);
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/bookings`);
+      const data = await response.json();
       
-      if (!response.ok) {
-        throw new Error('Fehler beim Laden der Buchungen')
+      if (response.ok) {
+        setBookings(data.data || []);
+        setError('');
+      } else {
+        setError(data.message || 'Fehler beim Laden der Buchungen');
       }
-      
-      const data = await response.json()
-      setBookings(data.data || [])
-    } catch (err) {
-      console.error('Fetch error:', err)
-      setError(err.message || 'Ein unerwarteter Fehler ist aufgetreten')
+    } catch (error) {
+      setError('Netzwerkfehler. Bitte versuchen Sie es erneut.');
     } finally {
-      setIsLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const applyFilters = () => {
-    let filtered = [...bookings]
-    
-    // Search filter (searches in multiple fields)
+  useEffect(() => {
+    fetchBookings();
+  }, []);
+
+  useEffect(() => {
+    let filtered = bookings;
+
+    // Textsuche
     if (filters.search) {
-      const searchTerm = filters.search.toLowerCase()
-      filtered = filtered.filter(booking =>
-        booking.kundenname.toLowerCase().includes(searchTerm) ||
-        booking.kundennummer.toLowerCase().includes(searchTerm) ||
-        booking.belegung.toLowerCase().includes(searchTerm) ||
-        booking.berater.toLowerCase().includes(searchTerm)
-      )
+      const searchLower = filters.search.toLowerCase();
+      filtered = filtered.filter(booking => 
+        booking.kundenname.toLowerCase().includes(searchLower) ||
+        booking.kundennummer.toLowerCase().includes(searchLower) ||
+        booking.belegung.toLowerCase().includes(searchLower) ||
+        booking.berater.toLowerCase().includes(searchLower)
+      );
     }
-    
-    // Specific filters
-    if (filters.belegung) {
-      filtered = filtered.filter(booking =>
-        booking.belegung.toLowerCase().includes(filters.belegung.toLowerCase())
-      )
-    }
-    
-    if (filters.berater) {
-      filtered = filtered.filter(booking =>
-        booking.berater.toLowerCase().includes(filters.berater.toLowerCase())
-      )
-    }
-    
-    if (filters.status) {
-      filtered = filtered.filter(booking => booking.status === filters.status)
-    }
-    
-    if (filters.platzierung) {
-      filtered = filtered.filter(booking => booking.platzierung === parseInt(filters.platzierung))
-    }
-    
-    setFilteredBookings(filtered)
-  }
 
-  const handleFilterChange = (field, value) => {
+    // Belegung Filter
+    if (filters.belegung) {
+      filtered = filtered.filter(booking => 
+        booking.belegung.toLowerCase().includes(filters.belegung.toLowerCase())
+      );
+    }
+
+    // Berater Filter
+    if (filters.berater) {
+      filtered = filtered.filter(booking => 
+        booking.berater.toLowerCase().includes(filters.berater.toLowerCase())
+      );
+    }
+
+    // Status Filter
+    if (filters.status) {
+      filtered = filtered.filter(booking => booking.status === filters.status);
+    }
+
+    // Platzierung Filter
+    if (filters.platzierung) {
+      filtered = filtered.filter(booking => booking.platzierung.toString() === filters.platzierung);
+    }
+
+    setFilteredBookings(filtered);
+  }, [bookings, filters]);
+
+  const handleFilterChange = (name, value) => {
     setFilters(prev => ({
       ...prev,
-      [field]: value
-    }))
-  }
+      [name]: value
+    }));
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm('Sind Sie sicher, dass Sie diese Buchung löschen möchten?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/bookings/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        await fetchBookings(); // Neu laden
+      } else {
+        const data = await response.json();
+        alert(data.message || 'Fehler beim Löschen der Buchung');
+      }
+    } catch (error) {
+      alert('Netzwerkfehler beim Löschen der Buchung');
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'frei':
+        return 'bg-green-100 text-green-800';
+      case 'reserviert':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'gebucht':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   const clearFilters = () => {
     setFilters({
@@ -132,398 +142,215 @@ function BookingOverview() {
       berater: '',
       status: '',
       platzierung: ''
-    })
-  }
+    });
+  };
 
-  const deleteBooking = async (id) => {
-    if (!confirm('Sind Sie sicher, dass Sie diese Buchung löschen möchten?')) {
-      return
-    }
-    
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/bookings/${id}`, {
-        method: 'DELETE'
-      })
-      
-      if (!response.ok) {
-        throw new Error('Fehler beim Löschen der Buchung')
-      }
-      
-      // Remove from local state
-      setBookings(prev => prev.filter(booking => booking.id !== id))
-    } catch (err) {
-      console.error('Delete error:', err)
-      setError(err.message || 'Fehler beim Löschen der Buchung')
-    }
-  }
-
-  const formatDateTime = (dateString) => {
-    const date = new Date(dateString)
-    return date.toLocaleString('de-DE', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-
-  const exportBookings = () => {
-    const csvContent = [
-      ['ID', 'Kundenname', 'Kundennummer', 'Belegung', 'Von', 'Bis', 'Platzierung', 'Status', 'Berater'],
-      ...filteredBookings.map(booking => [
-        booking.id,
-        booking.kundenname,
-        booking.kundennummer,
-        booking.belegung,
-        formatDateTime(booking.zeitraum_von),
-        formatDateTime(booking.zeitraum_bis),
-        booking.platzierung,
-        statusLabels[booking.status],
-        booking.berater
-      ])
-    ].map(row => row.join(',')).join('\n')
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    const url = URL.createObjectURL(blob)
-    link.setAttribute('href', url)
-    link.setAttribute('download', `buchungen_${new Date().toISOString().split('T')[0]}.csv`)
-    link.style.visibility = 'hidden'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
-
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="flex items-center space-x-2">
-          <RefreshCw className="h-6 w-6 animate-spin" />
-          <span>Buchungen werden geladen...</span>
-        </div>
-      </div>
-    )
+      <Card className="w-full">
+        <CardContent className="flex items-center justify-center py-8">
+          <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+          Buchungen werden geladen...
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Buchungsübersicht</h1>
-        <div className="mt-4 sm:mt-0 flex space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={exportBookings}
-            disabled={filteredBookings.length === 0}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchBookings}
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Aktualisieren
-          </Button>
-          <Link to="/booking">
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Neue Buchung
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Gesamt</p>
-                <p className="text-2xl font-bold">{bookings.length}</p>
-              </div>
-              <Calendar className="h-8 w-8 text-gray-400" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Gebucht</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {bookings.filter(b => b.status === 'gebucht').length}
-                </p>
-              </div>
-              <User className="h-8 w-8 text-blue-400" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Reserviert</p>
-                <p className="text-2xl font-bold text-yellow-600">
-                  {bookings.filter(b => b.status === 'reserviert').length}
-                </p>
-              </div>
-              <Clock className="h-8 w-8 text-yellow-400" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Frei</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {bookings.filter(b => b.status === 'frei').length}
-                </p>
-              </div>
-              <MapPin className="h-8 w-8 text-green-400" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
+    <div className="w-full space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center space-x-2">
-              <Filter className="h-5 w-5" />
-              <span>Filter</span>
-            </CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              {showFilters ? 'Ausblenden' : 'Anzeigen'}
-            </Button>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Buchungsübersicht
+          </CardTitle>
+          <CardDescription>
+            Verwalten und filtern Sie alle Buchungen
+          </CardDescription>
         </CardHeader>
-        {showFilters && (
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <CardContent>
+          {/* Filter Section */}
+          <div className="space-y-4 mb-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                Filter
+              </h3>
+              <Button variant="outline" size="sm" onClick={clearFilters}>
+                Filter zurücksetzen
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="search">Suche</Label>
+                <Label htmlFor="search" className="flex items-center gap-2">
+                  <Search className="h-4 w-4" />
+                  Suche
+                </Label>
                 <Input
                   id="search"
-                  placeholder="Name, Nummer, Branche..."
+                  placeholder="Name, Nummer, Belegung..."
                   value={filters.search}
                   onChange={(e) => handleFilterChange('search', e.target.value)}
                 />
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="belegung">Belegung</Label>
+                <Label className="flex items-center gap-2">
+                  <Building className="h-4 w-4" />
+                  Belegung
+                </Label>
                 <Input
-                  id="belegung"
-                  placeholder="Branche..."
+                  placeholder="z.B. Gastronomie"
                   value={filters.belegung}
                   onChange={(e) => handleFilterChange('belegung', e.target.value)}
                 />
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="berater">Berater</Label>
+                <Label className="flex items-center gap-2">
+                  <UserCheck className="h-4 w-4" />
+                  Berater
+                </Label>
                 <Input
-                  id="berater"
-                  placeholder="Berater..."
+                  placeholder="z.B. Anna Schmidt"
                   value={filters.berater}
                   onChange={(e) => handleFilterChange('berater', e.target.value)}
                 />
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={filters.status}
-                  onValueChange={(value) => handleFilterChange('status', value)}
-                >
+                <Label>Status</Label>
+                <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Alle" />
+                    <SelectValue placeholder="Alle Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Alle</SelectItem>
+                    <SelectItem value="">Alle Status</SelectItem>
                     <SelectItem value="frei">Frei</SelectItem>
                     <SelectItem value="reserviert">Reserviert</SelectItem>
                     <SelectItem value="gebucht">Gebucht</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="platzierung">Platzierung</Label>
-                <Select
-                  value={filters.platzierung}
-                  onValueChange={(value) => handleFilterChange('platzierung', value)}
-                >
+                <Label className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Platzierung
+                </Label>
+                <Select value={filters.platzierung} onValueChange={(value) => handleFilterChange('platzierung', value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Alle" />
+                    <SelectValue placeholder="Alle Platzierungen" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Alle</SelectItem>
+                    <SelectItem value="">Alle Platzierungen</SelectItem>
                     {[1, 2, 3, 4, 5, 6].map(num => (
                       <SelectItem key={num} value={num.toString()}>
-                        Platz {num}
+                        Platzierung {num}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-            
-            <div className="mt-4 flex justify-end">
-              <Button variant="outline" size="sm" onClick={clearFilters}>
-                Filter zurücksetzen
-              </Button>
-            </div>
-          </CardContent>
-        )}
-      </Card>
 
-      {/* Error Message */}
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Results Info */}
-      <div className="flex items-center justify-between text-sm text-gray-600">
-        <span>
-          {filteredBookings.length} von {bookings.length} Buchungen angezeigt
-        </span>
-      </div>
-
-      {/* Bookings Table */}
-      <Card>
-        <CardContent className="p-0">
-          {filteredBookings.length === 0 ? (
-            <div className="text-center py-12">
-              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Keine Buchungen gefunden
-              </h3>
-              <p className="text-gray-600 mb-4">
-                {bookings.length === 0 
-                  ? 'Es sind noch keine Buchungen vorhanden.'
-                  : 'Keine Buchungen entsprechen den aktuellen Filterkriterien.'
-                }
-              </p>
-              <Link to="/booking">
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Erste Buchung erstellen
+              <div className="flex items-end">
+                <Button onClick={fetchBookings} variant="outline" className="w-full">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Aktualisieren
                 </Button>
-              </Link>
+              </div>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Kunde
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Belegung
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Zeitraum
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Platz
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Berater
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Aktionen
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredBookings.map((booking) => (
-                    <tr key={booking.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
+          </div>
+
+          {error && (
+            <div className="p-3 rounded-md bg-red-50 text-red-700 border border-red-200 mb-4">
+              {error}
+            </div>
+          )}
+
+          {/* Results Summary */}
+          <div className="mb-4 text-sm text-gray-600">
+            {filteredBookings.length} von {bookings.length} Buchungen angezeigt
+          </div>
+
+          {/* Table */}
+          <div className="border rounded-md">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Kunde</TableHead>
+                  <TableHead>Belegung</TableHead>
+                  <TableHead>Zeitraum</TableHead>
+                  <TableHead>Platzierung</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Berater</TableHead>
+                  <TableHead>Aktionen</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredBookings.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                      Keine Buchungen gefunden
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredBookings.map((booking) => (
+                    <TableRow key={booking.id}>
+                      <TableCell>
                         <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {booking.kundenname}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {booking.kundennummer}
-                          </div>
+                          <div className="font-medium">{booking.kundenname}</div>
+                          <div className="text-sm text-gray-500">{booking.kundennummer}</div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{booking.belegung}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {formatDateTime(booking.zeitraum_von)}
+                      </TableCell>
+                      <TableCell>{booking.belegung}</TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <div>{formatDateForDisplay(booking.zeitraum_von)}</div>
+                          <div className="text-gray-500">bis {formatDateForDisplay(booking.zeitraum_bis)}</div>
                         </div>
-                        <div className="text-sm text-gray-500">
-                          bis {formatDateTime(booking.zeitraum_bis)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-gray-400" />
+                          {booking.platzierung}
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge variant="outline">
-                          Platz {booking.platzierung}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge className={statusColors[booking.status]}>
-                          {statusLabels[booking.status]}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {booking.berater}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end space-x-2">
+                      </TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
+                          {booking.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-gray-400" />
+                          {booking.berater}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
-                            onClick={() => {/* TODO: Implement edit */}}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deleteBooking(booking.id)}
-                            className="text-red-600 hover:text-red-900"
+                            onClick={() => handleDelete(booking.id)}
+                            className="text-red-600 hover:text-red-700"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
-  )
-}
+  );
+};
 
-export default BookingOverview
+export default BookingOverview;
 
