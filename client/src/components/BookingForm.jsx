@@ -261,7 +261,7 @@ const BookingForm = ({ onBookingCreated }) => {
               onChange={handleInputChange}
               className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="frei">Frei</option>
+              <option value="vorreserviert">vorreserviert</option>
               <option value="reserviert">Reserviert</option>
               <option value="gebucht">Gebucht</option>
             </select>
