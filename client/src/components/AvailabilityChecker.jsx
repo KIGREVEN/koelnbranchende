@@ -1,280 +1,184 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { 
-  Search, 
-  Calendar, 
-  Building, 
-  MapPin, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  AlertCircle,
-  Plus,
-  RefreshCw
-} from 'lucide-react'
-import { Button } from '@/components/ui/button.jsx'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
-import { Input } from '@/components/ui/input.jsx'
-import { Label } from '@/components/ui/label.jsx'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx'
-import { Alert, AlertDescription } from '@/components/ui/alert.jsx'
-import { Badge } from '@/components/ui/badge.jsx'
+import { useState } from 'react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Search, Building, MapPin, CalendarDays, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
-
-function AvailabilityChecker() {
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [availabilityResult, setAvailabilityResult] = useState(null)
-  const [overviewResult, setOverviewResult] = useState(null)
-  const [activeTab, setActiveTab] = useState('single') // 'single' or 'overview'
-  
-  const [singleCheck, setSingleCheck] = useState({
+const AvailabilityChecker = () => {
+  const [formData, setFormData] = useState({
     belegung: '',
     platzierung: '',
     zeitraum_von: '',
     zeitraum_bis: ''
-  })
+  });
 
-  const [overviewCheck, setOverviewCheck] = useState({
-    belegung: '',
-    zeitraum_von: '',
-    zeitraum_bis: '',
-    platzierung_min: '1',
-    platzierung_max: '6'
-  })
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState('');
 
-  const handleSingleCheckChange = (field, value) => {
-    setSingleCheck(prev => ({
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
       ...prev,
-      [field]: value
-    }))
-    // Clear results when form changes
-    if (availabilityResult) setAvailabilityResult(null)
-    if (error) setError('')
-  }
+      [name]: value
+    }));
+  };
 
-  const handleOverviewCheckChange = (field, value) => {
-    setOverviewCheck(prev => ({
+  const handleSelectChange = (name, value) => {
+    setFormData(prev => ({
       ...prev,
-      [field]: value
-    }))
-    // Clear results when form changes
-    if (overviewResult) setOverviewResult(null)
-    if (error) setError('')
-  }
+      [name]: value
+    }));
+  };
 
-  const validateSingleCheck = () => {
-    const errors = []
+  // Konvertiert Datum von tt.mm.jjjj zu ISO Format
+  const convertDateToISO = (dateString, isEndDate = false) => {
+    if (!dateString) return '';
     
-    if (!singleCheck.belegung.trim()) errors.push('Belegung ist erforderlich')
-    if (!singleCheck.platzierung) errors.push('Platzierung ist erforderlich')
-    if (!singleCheck.zeitraum_von) errors.push('Startdatum ist erforderlich')
-    if (!singleCheck.zeitraum_bis) errors.push('Enddatum ist erforderlich')
+    const [day, month, year] = dateString.split('.');
+    const time = isEndDate ? '23:59:59' : '00:00:00';
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${time}.000Z`;
+  };
+
+  // Validiert Datumsformat tt.mm.jjjj
+  const isValidDateFormat = (dateString) => {
+    const dateRegex = /^\d{1,2}\.\d{1,2}\.\d{4}$/;
+    if (!dateRegex.test(dateString)) return false;
     
-    if (singleCheck.zeitraum_von && singleCheck.zeitraum_bis) {
-      const startDate = new Date(singleCheck.zeitraum_von)
-      const endDate = new Date(singleCheck.zeitraum_bis)
-      if (endDate <= startDate) {
-        errors.push('Enddatum muss nach dem Startdatum liegen')
+    const [day, month, year] = dateString.split('.').map(Number);
+    const date = new Date(year, month - 1, day);
+    
+    return date.getFullYear() === year && 
+           date.getMonth() === month - 1 && 
+           date.getDate() === day;
+  };
+
+  // Konvertiert ISO Datum zurück zu tt.mm.jjjj Format für Anzeige
+  const formatDateForDisplay = (isoString) => {
+    const date = new Date(isoString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}.${month}.${year}`;
+  };
+
+  const validateForm = () => {
+    const errors = [];
+
+    if (!formData.belegung.trim()) errors.push('Belegung ist erforderlich');
+    if (!formData.platzierung) errors.push('Platzierung ist erforderlich');
+
+    if (!formData.zeitraum_von) {
+      errors.push('Startdatum ist erforderlich');
+    } else if (!isValidDateFormat(formData.zeitraum_von)) {
+      errors.push('Startdatum muss im Format tt.mm.jjjj eingegeben werden');
+    }
+
+    if (!formData.zeitraum_bis) {
+      errors.push('Enddatum ist erforderlich');
+    } else if (!isValidDateFormat(formData.zeitraum_bis)) {
+      errors.push('Enddatum muss im Format tt.mm.jjjj eingegeben werden');
+    }
+
+    // Prüfe ob Enddatum nach Startdatum liegt
+    if (formData.zeitraum_von && formData.zeitraum_bis && 
+        isValidDateFormat(formData.zeitraum_von) && isValidDateFormat(formData.zeitraum_bis)) {
+      const [startDay, startMonth, startYear] = formData.zeitraum_von.split('.').map(Number);
+      const [endDay, endMonth, endYear] = formData.zeitraum_bis.split('.').map(Number);
+      
+      const startDate = new Date(startYear, startMonth - 1, startDay);
+      const endDate = new Date(endYear, endMonth - 1, endDay);
+      
+      if (endDate < startDate) {
+        errors.push('Enddatum muss nach dem Startdatum liegen');
       }
     }
-    
-    return errors
-  }
 
-  const validateOverviewCheck = () => {
-    const errors = []
-    
-    if (!overviewCheck.zeitraum_von) errors.push('Startdatum ist erforderlich')
-    if (!overviewCheck.zeitraum_bis) errors.push('Enddatum ist erforderlich')
-    
-    if (overviewCheck.zeitraum_von && overviewCheck.zeitraum_bis) {
-      const startDate = new Date(overviewCheck.zeitraum_von)
-      const endDate = new Date(overviewCheck.zeitraum_bis)
-      if (endDate <= startDate) {
-        errors.push('Enddatum muss nach dem Startdatum liegen')
-      }
-    }
-    
-    const minPlatz = parseInt(overviewCheck.platzierung_min)
-    const maxPlatz = parseInt(overviewCheck.platzierung_max)
-    if (minPlatz > maxPlatz) {
-      errors.push('Minimale Platzierung muss kleiner oder gleich der maximalen sein')
-    }
-    
-    return errors
-  }
+    return errors;
+  };
 
-  const checkSingleAvailability = async () => {
-    const validationErrors = validateSingleCheck()
-    if (validationErrors.length > 0) {
-      setError(validationErrors.join(', '))
-      return
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    const errors = validateForm();
+    if (errors.length > 0) {
+      setError(errors.join(', '));
+      return;
     }
-    
-    setIsLoading(true)
-    setError('')
-    setAvailabilityResult(null)
-    
+
+    setLoading(true);
+    setError('');
+    setResult(null);
+
     try {
-      const params = new URLSearchParams(singleCheck)
-      const response = await fetch(`${API_BASE_URL}/api/availability/check?${params}`)
-      
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || errorData.error || 'Fehler bei der Verfügbarkeitsprüfung')
+      // Konvertiere Daten für API
+      const queryParams = new URLSearchParams({
+        belegung: formData.belegung,
+        platzierung: formData.platzierung,
+        zeitraum_von: convertDateToISO(formData.zeitraum_von, false),
+        zeitraum_bis: convertDateToISO(formData.zeitraum_bis, true)
+      });
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/availability/check?${queryParams}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setResult(data.data);
+      } else {
+        setError(data.message || 'Fehler beim Prüfen der Verfügbarkeit');
       }
-      
-      const data = await response.json()
-      setAvailabilityResult(data.data)
-    } catch (err) {
-      console.error('Availability check error:', err)
-      setError(err.message || 'Ein unerwarteter Fehler ist aufgetreten')
+    } catch (error) {
+      setError('Netzwerkfehler. Bitte versuchen Sie es erneut.');
     } finally {
-      setIsLoading(false)
+      setLoading(false);
     }
-  }
-
-  const checkOverviewAvailability = async () => {
-    const validationErrors = validateOverviewCheck()
-    if (validationErrors.length > 0) {
-      setError(validationErrors.join(', '))
-      return
-    }
-    
-    setIsLoading(true)
-    setError('')
-    setOverviewResult(null)
-    
-    try {
-      const params = new URLSearchParams(overviewCheck)
-      const response = await fetch(`${API_BASE_URL}/api/availability/overview?${params}`)
-      
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || errorData.error || 'Fehler bei der Verfügbarkeitsprüfung')
-      }
-      
-      const data = await response.json()
-      setOverviewResult(data.data)
-    } catch (err) {
-      console.error('Overview check error:', err)
-      setError(err.message || 'Ein unerwarteter Fehler ist aufgetreten')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const formatDateTime = (dateString) => {
-    const date = new Date(dateString)
-    return date.toLocaleString('de-DE', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-
-  const getAvailabilityIcon = (available) => {
-    if (available) {
-      return <CheckCircle className="h-5 w-5 text-green-600" />
-    } else {
-      return <XCircle className="h-5 w-5 text-red-600" />
-    }
-  }
-
-  const getAvailabilityBadge = (status) => {
-    const colors = {
-      frei: 'bg-green-100 text-green-800 border-green-200',
-      belegt: 'bg-red-100 text-red-800 border-red-200'
-    }
-    
-    const labels = {
-      frei: 'Verfügbar',
-      belegt: 'Belegt'
-    }
-    
-    return (
-      <Badge className={colors[status]}>
-        {labels[status]}
-      </Badge>
-    )
-  }
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Verfügbarkeitsprüfung</h1>
-        <Link to="/booking">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Neue Buchung
-          </Button>
-        </Link>
-      </div>
-
-      {/* Tab Navigation */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
-        <Button
-          variant={activeTab === 'single' ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => setActiveTab('single')}
-        >
-          Einzelprüfung
-        </Button>
-        <Button
-          variant={activeTab === 'overview' ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => setActiveTab('overview')}
-        >
-          Übersicht
-        </Button>
-      </div>
-
-      {/* Single Availability Check */}
-      {activeTab === 'single' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Search className="h-5 w-5" />
-              <span>Einzelne Verfügbarkeitsprüfung</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
+    <div className="w-full max-w-4xl mx-auto space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5" />
+            Verfügbarkeit prüfen
+          </CardTitle>
+          <CardDescription>
+            Prüfen Sie die Verfügbarkeit für eine bestimmte Belegung, Platzierung und Zeitraum
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="single-belegung" className="flex items-center space-x-2">
+                <Label htmlFor="belegung" className="flex items-center gap-2">
                   <Building className="h-4 w-4" />
-                  <span>Belegung (Branche) *</span>
+                  Belegung/Branche *
                 </Label>
                 <Input
-                  id="single-belegung"
-                  type="text"
-                  value={singleCheck.belegung}
-                  onChange={(e) => handleSingleCheckChange('belegung', e.target.value)}
+                  id="belegung"
+                  name="belegung"
+                  value={formData.belegung}
+                  onChange={handleInputChange}
                   placeholder="z.B. Gastronomie, Einzelhandel"
+                  required
                 />
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="single-platzierung" className="flex items-center space-x-2">
+                <Label className="flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
-                  <span>Platzierung *</span>
+                  Platzierung *
                 </Label>
-                <Select
-                  value={singleCheck.platzierung}
-                  onValueChange={(value) => handleSingleCheckChange('platzierung', value)}
-                >
+                <Select value={formData.platzierung} onValueChange={(value) => handleSelectChange('platzierung', value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Platz auswählen" />
+                    <SelectValue placeholder="Platzierung wählen" />
                   </SelectTrigger>
                   <SelectContent>
                     {[1, 2, 3, 4, 5, 6].map(num => (
                       <SelectItem key={num} value={num.toString()}>
-                        Platz {num}
+                        Platzierung {num}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -284,339 +188,132 @@ function AvailabilityChecker() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="single-von" className="flex items-center space-x-2">
-                  <Clock className="h-4 w-4" />
-                  <span>Zeitraum von *</span>
+                <Label htmlFor="zeitraum_von" className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4" />
+                  Startdatum *
                 </Label>
                 <Input
-                  id="single-von"
-                  type="datetime-local"
-                  value={singleCheck.zeitraum_von}
-                  onChange={(e) => handleSingleCheckChange('zeitraum_von', e.target.value)}
+                  id="zeitraum_von"
+                  name="zeitraum_von"
+                  value={formData.zeitraum_von}
+                  onChange={handleInputChange}
+                  placeholder="tt.mm.jjjj (z.B. 15.07.2024)"
+                  required
                 />
+                <p className="text-xs text-gray-500">Format: tt.mm.jjjj</p>
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="single-bis" className="flex items-center space-x-2">
-                  <Clock className="h-4 w-4" />
-                  <span>Zeitraum bis *</span>
+                <Label htmlFor="zeitraum_bis" className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4" />
+                  Enddatum *
                 </Label>
                 <Input
-                  id="single-bis"
-                  type="datetime-local"
-                  value={singleCheck.zeitraum_bis}
-                  onChange={(e) => handleSingleCheckChange('zeitraum_bis', e.target.value)}
+                  id="zeitraum_bis"
+                  name="zeitraum_bis"
+                  value={formData.zeitraum_bis}
+                  onChange={handleInputChange}
+                  placeholder="tt.mm.jjjj (z.B. 20.07.2024)"
+                  required
                 />
+                <p className="text-xs text-gray-500">Format: tt.mm.jjjj</p>
               </div>
             </div>
 
-            <div className="flex justify-end">
-              <Button
-                onClick={checkSingleAvailability}
-                disabled={isLoading}
-                className="min-w-[120px]"
-              >
-                {isLoading ? (
-                  <div className="flex items-center space-x-2">
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                    <span>Prüfen...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center space-x-2">
-                    <Search className="h-4 w-4" />
-                    <span>Verfügbarkeit prüfen</span>
-                  </div>
-                )}
-              </Button>
-            </div>
-
-            {/* Single Check Result */}
-            {availabilityResult && (
-              <Card className="mt-6">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    {getAvailabilityIcon(availabilityResult.available)}
-                    <span>Prüfungsergebnis</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-sm font-medium text-gray-600">Belegung</Label>
-                        <p className="text-sm">{availabilityResult.belegung}</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium text-gray-600">Platzierung</Label>
-                        <p className="text-sm">Platz {availabilityResult.platzierung}</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium text-gray-600">Zeitraum</Label>
-                        <p className="text-sm">
-                          {formatDateTime(availabilityResult.zeitraum_von)} - {formatDateTime(availabilityResult.zeitraum_bis)}
-                        </p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium text-gray-600">Status</Label>
-                        <div className="mt-1">
-                          {getAvailabilityBadge(availabilityResult.status)}
-                        </div>
-                      </div>
-                    </div>
-
-                    {availabilityResult.conflicts && availabilityResult.conflicts.length > 0 && (
-                      <div>
-                        <Label className="text-sm font-medium text-gray-600 mb-2 block">
-                          Konflikte ({availabilityResult.conflicts.length})
-                        </Label>
-                        <div className="space-y-2">
-                          {availabilityResult.conflicts.map((conflict, index) => (
-                            <div key={index} className="p-3 bg-red-50 border border-red-200 rounded-md">
-                              <div className="flex items-center space-x-2 mb-1">
-                                <AlertCircle className="h-4 w-4 text-red-600" />
-                                <span className="font-medium text-red-800">{conflict.kundenname}</span>
-                                <Badge className="bg-red-100 text-red-800 border-red-200">
-                                  {conflict.status}
-                                </Badge>
-                              </div>
-                              <p className="text-sm text-red-700">
-                                {formatDateTime(conflict.zeitraum_von)} - {formatDateTime(conflict.zeitraum_bis)}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {availabilityResult.available && (
-                      <div className="flex justify-end">
-                        <Link to="/booking" state={{ prefill: singleCheck }}>
-                          <Button>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Jetzt buchen
-                          </Button>
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+            {error && (
+              <div className="p-3 rounded-md bg-red-50 text-red-700 border border-red-200 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                {error}
+              </div>
             )}
-          </CardContent>
-        </Card>
-      )}
 
-      {/* Overview Availability Check */}
-      {activeTab === 'overview' && (
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? 'Wird geprüft...' : 'Verfügbarkeit prüfen'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {result && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Calendar className="h-5 w-5" />
-              <span>Verfügbarkeitsübersicht</span>
+            <CardTitle className="flex items-center gap-2">
+              {result.available ? (
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              ) : (
+                <XCircle className="h-5 w-5 text-red-600" />
+              )}
+              Verfügbarkeitsergebnis
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="overview-belegung" className="flex items-center space-x-2">
-                  <Building className="h-4 w-4" />
-                  <span>Belegung (optional)</span>
-                </Label>
-                <Input
-                  id="overview-belegung"
-                  type="text"
-                  value={overviewCheck.belegung}
-                  onChange={(e) => handleOverviewCheckChange('belegung', e.target.value)}
-                  placeholder="Leer lassen für alle Belegungen"
-                />
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Belegung</Label>
+                  <p className="text-lg">{result.belegung}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Platzierung</Label>
+                  <p className="text-lg">Platzierung {result.platzierung}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Zeitraum</Label>
+                  <p className="text-lg">
+                    {formatDateForDisplay(result.zeitraum_von)} - {formatDateForDisplay(result.zeitraum_bis)}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Status</Label>
+                  <div className="flex items-center gap-2">
+                    {result.available ? (
+                      <>
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span className="text-green-700 font-medium">Verfügbar</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                        <span className="text-red-700 font-medium">Nicht verfügbar</span>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="overview-von" className="flex items-center space-x-2">
-                  <Clock className="h-4 w-4" />
-                  <span>Zeitraum von *</span>
-                </Label>
-                <Input
-                  id="overview-von"
-                  type="datetime-local"
-                  value={overviewCheck.zeitraum_von}
-                  onChange={(e) => handleOverviewCheckChange('zeitraum_von', e.target.value)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="overview-bis" className="flex items-center space-x-2">
-                  <Clock className="h-4 w-4" />
-                  <span>Zeitraum bis *</span>
-                </Label>
-                <Input
-                  id="overview-bis"
-                  type="datetime-local"
-                  value={overviewCheck.zeitraum_bis}
-                  onChange={(e) => handleOverviewCheckChange('zeitraum_bis', e.target.value)}
-                />
-              </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="overview-min" className="flex items-center space-x-2">
-                  <MapPin className="h-4 w-4" />
-                  <span>Platzierung von</span>
-                </Label>
-                <Select
-                  value={overviewCheck.platzierung_min}
-                  onValueChange={(value) => handleOverviewCheckChange('platzierung_min', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[1, 2, 3, 4, 5, 6].map(num => (
-                      <SelectItem key={num} value={num.toString()}>
-                        Platz {num}
-                      </SelectItem>
+              {result.conflicts && result.conflicts.length > 0 && (
+                <div className="mt-4">
+                  <Label className="text-sm font-medium text-gray-600">Konflikte</Label>
+                  <div className="mt-2 space-y-2">
+                    {result.conflicts.map((conflict, index) => (
+                      <div key={index} className="p-3 bg-red-50 border border-red-200 rounded-md">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium text-red-900">{conflict.kundenname}</p>
+                            <p className="text-sm text-red-700">
+                              {formatDateForDisplay(conflict.zeitraum_von)} - {formatDateForDisplay(conflict.zeitraum_bis)}
+                            </p>
+                          </div>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            conflict.status === 'gebucht' 
+                              ? 'bg-red-100 text-red-800' 
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {conflict.status}
+                          </span>
+                        </div>
+                      </div>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="overview-max" className="flex items-center space-x-2">
-                  <MapPin className="h-4 w-4" />
-                  <span>Platzierung bis</span>
-                </Label>
-                <Select
-                  value={overviewCheck.platzierung_max}
-                  onValueChange={(value) => handleOverviewCheckChange('platzierung_max', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[1, 2, 3, 4, 5, 6].map(num => (
-                      <SelectItem key={num} value={num.toString()}>
-                        Platz {num}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  </div>
+                </div>
+              )}
             </div>
-
-            <div className="flex justify-end">
-              <Button
-                onClick={checkOverviewAvailability}
-                disabled={isLoading}
-                className="min-w-[120px]"
-              >
-                {isLoading ? (
-                  <div className="flex items-center space-x-2">
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                    <span>Prüfen...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center space-x-2">
-                    <Search className="h-4 w-4" />
-                    <span>Übersicht erstellen</span>
-                  </div>
-                )}
-              </Button>
-            </div>
-
-            {/* Overview Result */}
-            {overviewResult && (
-              <Card className="mt-6">
-                <CardHeader>
-                  <CardTitle>Verfügbarkeitsübersicht</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <Label className="font-medium text-gray-600">Zeitraum</Label>
-                        <p>{formatDateTime(overviewResult.zeitraum_von)} - {formatDateTime(overviewResult.zeitraum_bis)}</p>
-                      </div>
-                      <div>
-                        <Label className="font-medium text-gray-600">Belegung</Label>
-                        <p>{overviewResult.belegung}</p>
-                      </div>
-                      <div>
-                        <Label className="font-medium text-gray-600">Platzierungen</Label>
-                        <p>{overviewResult.platzierung_range}</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {overviewResult.overview.map((item, index) => (
-                        <Card key={index} className="border">
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <h4 className="font-medium">Platz {item.platzierung}</h4>
-                              {getAvailabilityIcon(item.available)}
-                            </div>
-                            <div className="space-y-2">
-                              <div>
-                                {getAvailabilityBadge(item.status)}
-                              </div>
-                              {item.conflicts && item.conflicts.length > 0 && (
-                                <div>
-                                  <p className="text-xs text-gray-600 mb-1">
-                                    {item.conflicts.length} Konflikt(e)
-                                  </p>
-                                  <div className="space-y-1">
-                                    {item.conflicts.slice(0, 2).map((conflict, idx) => (
-                                      <div key={idx} className="text-xs p-2 bg-red-50 rounded">
-                                        <div className="font-medium">{conflict.kundenname}</div>
-                                        <div className="text-gray-600">{conflict.belegung}</div>
-                                      </div>
-                                    ))}
-                                    {item.conflicts.length > 2 && (
-                                      <p className="text-xs text-gray-500">
-                                        +{item.conflicts.length - 2} weitere
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-                              {item.available && (
-                                <Link 
-                                  to="/booking" 
-                                  state={{ 
-                                    prefill: { 
-                                      ...overviewCheck, 
-                                      platzierung: item.platzierung.toString() 
-                                    } 
-                                  }}
-                                >
-                                  <Button size="sm" className="w-full">
-                                    <Plus className="h-3 w-3 mr-1" />
-                                    Buchen
-                                  </Button>
-                                </Link>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </CardContent>
         </Card>
-      )}
-
-      {/* Error Message */}
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default AvailabilityChecker
+export default AvailabilityChecker;
 
