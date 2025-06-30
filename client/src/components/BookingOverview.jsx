@@ -19,16 +19,26 @@ const BookingOverview = () => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/bookings`);
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://koeln-branchen-api.onrender.com';
+      const response = await fetch(`${baseUrl}/api/bookings`);
       if (response.ok) {
         const data = await response.json();
-        setBookings(data);
-        setFilteredBookings(data);
+        // Sicherheitsprüfung: Stelle sicher, dass data ein Array ist
+        const bookingsArray = Array.isArray(data) ? data : [];
+        setBookings(bookingsArray);
+        setFilteredBookings(bookingsArray);
+        console.log('Buchungen erfolgreich geladen:', bookingsArray.length);
       } else {
-        console.error('Fehler beim Laden der Buchungen');
+        console.error('Fehler beim Laden der Buchungen:', response.status);
+        // Fallback zu leerem Array
+        setBookings([]);
+        setFilteredBookings([]);
       }
     } catch (error) {
       console.error('Netzwerkfehler:', error);
+      // Fallback zu leerem Array
+      setBookings([]);
+      setFilteredBookings([]);
     } finally {
       setLoading(false);
     }
@@ -74,6 +84,13 @@ const BookingOverview = () => {
 
   // Filter anwenden
   const applyFilters = (currentFilters) => {
+    // Sicherheitsprüfung: Stelle sicher, dass bookings ein Array ist
+    if (!Array.isArray(bookings)) {
+      console.warn('Bookings ist kein Array:', bookings);
+      setFilteredBookings([]);
+      return;
+    }
+    
     let filtered = bookings.filter(booking => {
       // Text-basierte Filter
       const matchesSearch = !currentFilters.search || 
@@ -341,7 +358,7 @@ const BookingOverview = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredBookings.map((booking) => (
+              {Array.isArray(filteredBookings) && filteredBookings.map((booking) => (
                 <tr key={booking.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>

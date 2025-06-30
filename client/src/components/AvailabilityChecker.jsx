@@ -117,7 +117,7 @@ const AvailabilityChecker = () => {
         platzierung: parseInt(checkData.platzierung)
       };
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/availability`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://koeln-branchen-api.onrender.com'}/api/availability`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -128,13 +128,21 @@ const AvailabilityChecker = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setResults(data);
+        // Robuste Datenvalidierung
+        const validatedData = {
+          available: data.available || false,
+          conflicts: Array.isArray(data.conflicts) ? data.conflicts : [],
+          message: data.message || ''
+        };
+        
+        setResults(validatedData);
         setMessage({ 
           type: 'success', 
-          text: data.available 
+          text: validatedData.available 
             ? 'Zeitraum ist verfügbar!' 
             : 'Zeitraum ist nicht verfügbar - es gibt Konflikte.'
         });
+        console.log('Verfügbarkeitsprüfung erfolgreich:', validatedData);
       } else {
         setMessage({ type: 'error', text: data.message || 'Fehler bei der Verfügbarkeitsprüfung' });
       }
@@ -321,7 +329,7 @@ const AvailabilityChecker = () => {
                 🚫 Konflikte gefunden:
               </h3>
               <div className="space-y-2">
-                {results.conflicts.map((conflict, index) => (
+                {Array.isArray(results.conflicts) && results.conflicts.map((conflict, index) => (
                   <div key={index} className="bg-red-50 border border-red-200 p-3 rounded">
                     <div className="flex justify-between items-start">
                       <div>
