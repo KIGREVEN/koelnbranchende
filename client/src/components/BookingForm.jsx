@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import useCategories from '../hooks/useCategories';
 
 const BookingForm = ({ onBookingCreated }) => {
   const [formData, setFormData] = useState({
@@ -8,14 +7,27 @@ const BookingForm = ({ onBookingCreated }) => {
     belegung: '',
     zeitraum_von: '',
     zeitraum_bis: '',
-    platzierung: '1', // Standardwert statt leer
+    platzierung: '1',
     status: 'reserviert',
     berater: ''
   });
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
-  const { categories, loading: categoriesLoading, error: categoriesError } = useCategories();
+
+  // Statische Kategorien als Fallback - eliminiert API-Abhängigkeit
+  const staticCategories = [
+    { id: 1, name: 'Gastronomie' },
+    { id: 2, name: 'Einzelhandel' },
+    { id: 3, name: 'Dienstleistungen' },
+    { id: 4, name: 'Handwerk' },
+    { id: 5, name: 'Gesundheit' },
+    { id: 6, name: 'Bildung' },
+    { id: 7, name: 'Immobilien' },
+    { id: 8, name: 'Automotive' },
+    { id: 9, name: 'IT & Technik' },
+    { id: 10, name: 'Finanzdienstleistungen' }
+  ];
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -25,61 +37,23 @@ const BookingForm = ({ onBookingCreated }) => {
     }));
   };
 
-  // Konvertiert Datum von tt.mm.jjjj zu ISO Format
-  const convertDateToISO = (dateString, isEndDate = false) => {
-    if (!dateString) return '';
-    
-    const [day, month, year] = dateString.split('.');
-    const time = isEndDate ? '23:59:59' : '00:00:00';
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${time}.000Z`;
-  };
-
-  // Validiert Datumsformat tt.mm.jjjj
-  const isValidDateFormat = (dateString) => {
-    const dateRegex = /^\d{1,2}\.\d{1,2}\.\d{4}$/;
-    if (!dateRegex.test(dateString)) return false;
-    
-    const [day, month, year] = dateString.split('.').map(Number);
-    const date = new Date(year, month - 1, day);
-    
-    return date.getFullYear() === year && 
-           date.getMonth() === month - 1 && 
-           date.getDate() === day;
-  };
-
   const validateForm = () => {
     const errors = [];
-
+    
     if (!formData.kundenname.trim()) errors.push('Kundenname ist erforderlich');
     if (!formData.kundennummer.trim()) errors.push('Kundennummer ist erforderlich');
     if (!formData.belegung.trim()) errors.push('Belegung ist erforderlich');
+    if (!formData.zeitraum_von.trim()) errors.push('Startdatum ist erforderlich');
+    if (!formData.zeitraum_bis.trim()) errors.push('Enddatum ist erforderlich');
     if (!formData.berater.trim()) errors.push('Berater ist erforderlich');
-    if (!formData.platzierung) errors.push('Platzierung ist erforderlich');
 
-    if (!formData.zeitraum_von) {
-      errors.push('Startdatum ist erforderlich');
-    } else if (!isValidDateFormat(formData.zeitraum_von)) {
-      errors.push('Startdatum muss im Format tt.mm.jjjj eingegeben werden');
+    // Datumsvalidierung
+    const dateRegex = /^\d{2}\.\d{2}\.\d{4}$/;
+    if (formData.zeitraum_von && !dateRegex.test(formData.zeitraum_von)) {
+      errors.push('Startdatum muss im Format tt.mm.jjjj sein');
     }
-
-    if (!formData.zeitraum_bis) {
-      errors.push('Enddatum ist erforderlich');
-    } else if (!isValidDateFormat(formData.zeitraum_bis)) {
-      errors.push('Enddatum muss im Format tt.mm.jjjj eingegeben werden');
-    }
-
-    // Prüfe ob Enddatum nach Startdatum liegt
-    if (formData.zeitraum_von && formData.zeitraum_bis && 
-        isValidDateFormat(formData.zeitraum_von) && isValidDateFormat(formData.zeitraum_bis)) {
-      const [startDay, startMonth, startYear] = formData.zeitraum_von.split('.').map(Number);
-      const [endDay, endMonth, endYear] = formData.zeitraum_bis.split('.').map(Number);
-      
-      const startDate = new Date(startYear, startMonth - 1, startDay);
-      const endDate = new Date(endYear, endMonth - 1, endDay);
-      
-      if (endDate < startDate) {
-        errors.push('Enddatum muss nach dem Startdatum liegen');
-      }
+    if (formData.zeitraum_bis && !dateRegex.test(formData.zeitraum_bis)) {
+      errors.push('Enddatum muss im Format tt.mm.jjjj sein');
     }
 
     return errors;
@@ -90,7 +64,10 @@ const BookingForm = ({ onBookingCreated }) => {
     
     const errors = validateForm();
     if (errors.length > 0) {
-      setMessage({ type: 'error', text: errors.join(', ') });
+      setMessage({ 
+        type: 'error', 
+        text: 'Bitte korrigieren Sie folgende Fehler: ' + errors.join(', ') 
+      });
       return;
     }
 
@@ -98,61 +75,74 @@ const BookingForm = ({ onBookingCreated }) => {
     setMessage({ type: '', text: '' });
 
     try {
-      // Konvertiere Daten für API
-      const apiData = {
-        ...formData,
-        zeitraum_von: convertDateToISO(formData.zeitraum_von, false),
-        zeitraum_bis: convertDateToISO(formData.zeitraum_bis, true),
-        platzierung: parseInt(formData.platzierung)
-      };
-
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/bookings`, {
+      // API-URL mit Fallback
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://koeln-branchen-api.onrender.com';
+      const response = await fetch(`${baseUrl}/api/bookings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(apiData),
+        body: JSON.stringify(formData)
       });
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      if (response.ok) {
-        setMessage({ type: 'success', text: 'Buchung erfolgreich erstellt!' });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage({ 
+          type: 'success', 
+          text: 'Buchung erfolgreich erstellt!' 
+        });
+        
+        // Form zurücksetzen
         setFormData({
           kundenname: '',
           kundennummer: '',
           belegung: '',
           zeitraum_von: '',
           zeitraum_bis: '',
-          platzierung: '1', // Zurück zum Standardwert
+          platzierung: '1',
           status: 'reserviert',
           berater: ''
         });
-        if (onBookingCreated) onBookingCreated();
-      } else {
-        if (response.status === 409) {
-          setMessage({ 
-            type: 'error', 
-            text: 'Konflikt: Ein Termin für diese Belegung, Platzierung und Zeitraum ist bereits vorhanden.' 
-          });
-        } else {
-          setMessage({ type: 'error', text: data.message || 'Fehler beim Erstellen der Buchung' });
+
+        // Parent-Komponente benachrichtigen
+        if (onBookingCreated) {
+          onBookingCreated(data.data);
         }
+      } else {
+        throw new Error(data.message || 'Unbekannter Fehler');
       }
     } catch (error) {
-      setMessage({ type: 'error', text: 'Netzwerkfehler. Bitte versuchen Sie es erneut.' });
+      console.error('Fehler beim Erstellen der Buchung:', error);
+      setMessage({ 
+        type: 'error', 
+        text: 'Fehler beim Erstellen der Buchung: ' + error.message 
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-        📅 Neue Buchung erstellen
+    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">
+        📝 Neue Buchung erstellen
       </h2>
-      <p className="text-gray-600 mb-6">Erstellen Sie eine neue Buchung für das Köln Branchen Portal</p>
-      
+
+      {message.text && (
+        <div className={`mb-4 p-3 rounded ${
+          message.type === 'success' 
+            ? 'bg-green-100 text-green-700 border border-green-300' 
+            : 'bg-red-100 text-red-700 border border-red-300'
+        }`}>
+          {message.text}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -164,23 +154,23 @@ const BookingForm = ({ onBookingCreated }) => {
               name="kundenname"
               value={formData.kundenname}
               onChange={handleInputChange}
+              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Max Mustermann"
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-1 flex items-center gap-2">
-              🆔 Kundennummer *
+              🔢 Kundennummer *
             </label>
             <input
               type="text"
               name="kundennummer"
               value={formData.kundennummer}
               onChange={handleInputChange}
-              placeholder="K-001"
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="K-12345"
               required
             />
           </div>
@@ -193,15 +183,15 @@ const BookingForm = ({ onBookingCreated }) => {
           <input
             type="text"
             name="belegung"
-            list="belegung-list"
             value={formData.belegung}
             onChange={handleInputChange}
-            placeholder="z.B. Kanalreinigung"
-            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            list="belegung-list"
+            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="z.B. Gastronomie, Einzelhandel..."
             required
           />
           <datalist id="belegung-list">
-            {Array.isArray(categories) && categories.map(cat => (
+            {staticCategories.map(cat => (
               <option key={cat.id} value={cat.name} />
             ))}
           </datalist>
@@ -218,10 +208,9 @@ const BookingForm = ({ onBookingCreated }) => {
               value={formData.zeitraum_von}
               onChange={handleInputChange}
               placeholder="tt.mm.jjjj (z.B. 15.07.2024)"
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             />
-            <p className="text-xs text-gray-500 mt-1">Format: tt.mm.jjjj</p>
           </div>
 
           <div>
@@ -233,11 +222,10 @@ const BookingForm = ({ onBookingCreated }) => {
               name="zeitraum_bis"
               value={formData.zeitraum_bis}
               onChange={handleInputChange}
-              placeholder="tt.mm.jjjj (z.B. 20.07.2024)"
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="tt.mm.jjjj (z.B. 31.07.2024)"
+              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             />
-            <p className="text-xs text-gray-500 mt-1">Format: tt.mm.jjjj</p>
           </div>
         </div>
 
@@ -250,28 +238,33 @@ const BookingForm = ({ onBookingCreated }) => {
               name="platzierung"
               value={formData.platzierung}
               onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             >
-              {[1, 2, 3, 4, 5, 6].map(num => (
-                <option key={num} value={num.toString()}>Platzierung {num}</option>
-              ))}
+              <option value="1">Position 1 (Premium)</option>
+              <option value="2">Position 2</option>
+              <option value="3">Position 3</option>
+              <option value="4">Position 4</option>
+              <option value="5">Position 5</option>
+              <option value="6">Position 6</option>
             </select>
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-1 flex items-center gap-2">
-              ⚠️ Status
+              📊 Status
             </label>
             <select
               name="status"
               value={formData.status}
               onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="vorreserviert">vorreserviert</option>
               <option value="reserviert">Reserviert</option>
-              <option value="gebucht">Gebucht</option>
+              <option value="bestätigt">Bestätigt</option>
+              <option value="aktiv">Aktiv</option>
+              <option value="abgeschlossen">Abgeschlossen</option>
+              <option value="storniert">Storniert</option>
             </select>
           </div>
         </div>
@@ -285,27 +278,20 @@ const BookingForm = ({ onBookingCreated }) => {
             name="berater"
             value={formData.berater}
             onChange={handleInputChange}
+            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="Anna Schmidt"
-            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             required
           />
         </div>
 
-        {message.text && (
-          <div className={`p-4 rounded-md flex items-center gap-2 ${
-            message.type === 'success' 
-              ? 'bg-green-50 text-green-700 border border-green-200' 
-              : 'bg-red-50 text-red-700 border border-red-200'
-          }`}>
-            {message.type === 'success' ? '✅' : '❌'}
-            {message.text}
-          </div>
-        )}
-
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+          className={`w-full py-3 px-4 rounded font-medium transition-colors ${
+            loading
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'bg-blue-600 hover:bg-blue-700 text-white'
+          }`}
         >
           {loading ? '⏳ Wird erstellt...' : '✅ Buchung erstellen'}
         </button>
