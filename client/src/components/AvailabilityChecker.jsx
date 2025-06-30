@@ -229,28 +229,28 @@ const AvailabilityChecker = () => {
               <button
                 type="button"
                 onClick={() => setQuickDateRange(7)}
-                className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
               >
                 Nächste 7 Tage
               </button>
               <button
                 type="button"
                 onClick={() => setQuickDateRange(30)}
-                className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
               >
                 Nächste 30 Tage
               </button>
               <button
                 type="button"
                 onClick={() => setQuickDateRange(90)}
-                className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
               >
                 Nächste 90 Tage
               </button>
               <button
                 type="button"
                 onClick={() => setQuickDateRange(365)}
-                className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
               >
                 Nächstes Jahr
               </button>
@@ -299,7 +299,7 @@ const AvailabilityChecker = () => {
               value={checkData.belegung}
               onChange={handleInputChange}
               list="belegung-list"
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500"
               placeholder={categoriesLoading ? "Kategorien werden geladen..." : "z.B. Kanalreinigung"}
               required
               disabled={categoriesLoading}
@@ -324,7 +324,7 @@ const AvailabilityChecker = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-500 text-white py-3 px-6 rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-red-600 text-white py-3 px-6 rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? '⏳ Prüfe Verfügbarkeit...' : '🔍 Verfügbarkeit prüfen'}
           </button>
@@ -402,7 +402,7 @@ const AvailabilityChecker = () => {
                           <strong>Belegt vom:</strong> {formatDateFromISO(placement.zeitraum_von)} bis {formatDateFromISO(placement.zeitraum_bis)}
                         </p>
                         {placement.free_from && (
-                          <p className="text-sm text-blue-700 font-medium">
+                          <p className="text-sm text-green-700 font-medium">
                             🗓️ <strong>Wieder frei ab:</strong> {formatDateFromISO(placement.free_from)}
                           </p>
                         )}
@@ -438,8 +438,8 @@ const AvailabilityChecker = () => {
           )}
 
           {/* Zusammenfassung */}
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h3 className="font-semibold text-blue-800 mb-2">
+          <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <h3 className="font-semibold text-gray-800 mb-2">
               📈 Zusammenfassung
             </h3>
             <div className="grid grid-cols-2 gap-4 text-sm">

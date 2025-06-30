@@ -215,7 +215,7 @@ const BookingForm = ({ onBookingCreated }) => {
               name="kundenname"
               value={formData.kundenname}
               onChange={handleInputChange}
-              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent"
               placeholder="Max Mustermann"
               required
             />
@@ -230,7 +230,7 @@ const BookingForm = ({ onBookingCreated }) => {
               name="kundennummer"
               value={formData.kundennummer}
               onChange={handleInputChange}
-              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent"
               placeholder="K-12345"
               required
             />
@@ -247,7 +247,7 @@ const BookingForm = ({ onBookingCreated }) => {
             value={formData.belegung}
             onChange={handleInputChange}
             list="belegung-list"
-            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent"
             placeholder={categoriesLoading ? "Kategorien werden geladen..." : "z.B. Kanalreinigung"}
             required
             disabled={categoriesLoading}
@@ -298,7 +298,7 @@ const BookingForm = ({ onBookingCreated }) => {
               name="platzierung"
               value={formData.platzierung}
               onChange={handleInputChange}
-              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent"
               required
             >
               <option value="1">Position 1 (Premium)</option>
@@ -318,7 +318,7 @@ const BookingForm = ({ onBookingCreated }) => {
               name="status"
               value={formData.status}
               onChange={handleInputChange}
-              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent"
             >
               <option value="vorreserviert">Vorreserviert</option>
               <option value="reserviert">Reserviert</option>
@@ -336,7 +336,7 @@ const BookingForm = ({ onBookingCreated }) => {
             name="berater"
             value={formData.berater}
             onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent"
             placeholder="Anna Schmidt"
             required
           />
@@ -348,7 +348,7 @@ const BookingForm = ({ onBookingCreated }) => {
           className={`w-full py-3 px-4 rounded font-medium transition-colors ${
             loading
               ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
+              : 'bg-red-600 hover:bg-red-700 text-white'
           }`}
         >
           {loading ? '⏳ Wird erstellt...' : '✅ Buchung erstellen'}
