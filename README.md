@@ -90,6 +90,10 @@ koeln-branchen-portal/
 | `created_at` | Timestamp | Erstellungsdatum |
 | `updated_at` | Timestamp | Letzte Änderung |
 
+### Branchenverwaltung
+
+Alle zulässigen Branchen werden in einer separaten Tabelle `categories` gespeichert. Über den Endpoint `/api/categories` können sie abgefragt und durchsucht werden. Buchungen akzeptieren nur noch Branchen, die in dieser Tabelle vorhanden sind.
+
 ### Constraints und Validierung
 
 - **Zeitraum-Validierung**: `zeitraum_bis` muss nach `zeitraum_von` liegen

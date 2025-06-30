@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import useCategories from '../hooks/useCategories';
 
 const BookingForm = ({ onBookingCreated }) => {
   const [formData, setFormData] = useState({
@@ -14,6 +15,7 @@ const BookingForm = ({ onBookingCreated }) => {
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const categories = useCategories();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -191,12 +193,18 @@ const BookingForm = ({ onBookingCreated }) => {
           <input
             type="text"
             name="belegung"
+            list="belegung-list"
             value={formData.belegung}
             onChange={handleInputChange}
-            placeholder="z.B. Gastronomie, Einzelhandel, Dienstleistung"
+            placeholder="z.B. Kanalreinigung"
             className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             required
           />
+          <datalist id="belegung-list">
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.name} />
+            ))}
+          </datalist>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -7,6 +7,18 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
+const sampleCategories = [
+  'Gastronomie',
+  'Einzelhandel',
+  'Dienstleistung',
+  'Handwerk',
+  'IT-Services',
+  'Beratung',
+  'Immobilien',
+  'Gesundheitswesen',
+  'Kanalreinigung'
+];
+
 const sampleBookings = [
   {
     kundenname: 'Max Mustermann',
@@ -115,14 +127,22 @@ const seedDatabase = async () => {
   
   try {
     console.log('🌱 Starting database seeding...');
-    
+
     // Clear existing data
     await client.query('DELETE FROM bookings');
-    console.log('🗑️  Cleared existing bookings');
+    await client.query('DELETE FROM categories');
+    console.log('🗑️  Cleared existing bookings and categories');
     
-    // Reset sequence
+    // Reset sequences
     await client.query('ALTER SEQUENCE bookings_id_seq RESTART WITH 1');
-    console.log('🔄 Reset ID sequence');
+    await client.query('ALTER SEQUENCE categories_id_seq RESTART WITH 1');
+    console.log('🔄 Reset ID sequences');
+
+    // Insert sample categories
+    for (const name of sampleCategories) {
+      await client.query('INSERT INTO categories (name) VALUES ($1)', [name]);
+    }
+    console.log(`✅ Inserted ${sampleCategories.length} categories`);
     
     // Insert sample bookings
     for (const booking of sampleBookings) {
@@ -203,9 +223,11 @@ const clearDatabase = async () => {
   
   try {
     console.log('🗑️  Clearing database...');
-    
+
     await client.query('DELETE FROM bookings');
+    await client.query('DELETE FROM categories');
     await client.query('ALTER SEQUENCE bookings_id_seq RESTART WITH 1');
+    await client.query('ALTER SEQUENCE categories_id_seq RESTART WITH 1');
     
     console.log('✅ Database cleared');
     

@@ -12,7 +12,16 @@ const createTables = async () => {
   
   try {
     console.log('🚀 Starting database migration...');
-    
+
+    // Create categories table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS categories (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL UNIQUE
+      );
+    `);
+    console.log('✅ Created categories table');
+
     // Create bookings table
     await client.query(`
       CREATE TABLE IF NOT EXISTS bookings (

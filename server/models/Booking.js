@@ -1,5 +1,6 @@
 const { query, transaction } = require('../config/database');
 const Joi = require('joi');
+const Category = require('./Category');
 
 // Validation schema for booking data
 const bookingSchema = Joi.object({
@@ -88,6 +89,14 @@ class Booking {
   // Create a new booking
   static async create(bookingData) {
     const validatedData = this.validate(bookingData);
+
+    const categoryExists = await Category.exists(validatedData.belegung);
+    if (!categoryExists) {
+      const error = new Error('Invalid category');
+      error.name = 'ValidationError';
+      error.details = [{ field: 'belegung', message: 'Ungültige Branche' }];
+      throw error;
+    }
     
     // Check for conflicts
     const conflicts = await this.checkConflict(
@@ -189,6 +198,14 @@ class Booking {
     }
 
     const validatedData = this.validate({ ...existingBooking, ...updateData });
+
+    const categoryExists = await Category.exists(validatedData.belegung);
+    if (!categoryExists) {
+      const error = new Error('Invalid category');
+      error.name = 'ValidationError';
+      error.details = [{ field: 'belegung', message: 'Ungültige Branche' }];
+      throw error;
+    }
 
     // Check for conflicts (excluding current booking)
     const conflicts = await this.checkConflict(

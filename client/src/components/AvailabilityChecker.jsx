@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import useCategories from '../hooks/useCategories';
 
 const AvailabilityChecker = () => {
   const [formData, setFormData] = useState({
@@ -11,6 +12,7 @@ const AvailabilityChecker = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  const categories = useCategories();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -142,12 +144,18 @@ const AvailabilityChecker = () => {
               <input
                 type="text"
                 name="belegung"
+                list="availability-belegung-list"
                 value={formData.belegung}
                 onChange={handleInputChange}
-                placeholder="z.B. Gastronomie, Einzelhandel"
+                placeholder="z.B. Kanalreinigung"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               />
+              <datalist id="availability-belegung-list">
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.name} />
+                ))}
+              </datalist>
             </div>
 
             <div>
