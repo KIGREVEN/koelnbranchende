@@ -359,32 +359,32 @@ const BookingOverview = () => {
         </div>
 
         {/* Tabelle */}
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        <div className="overflow-hidden">
+          <table className="w-full table-fixed">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '20%'}}>
                   Kunde
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
+                <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '15%'}}>
                   Belegung
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '15%'}}>
                   Zeitraum
                 </th>
-                <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                <th className="px-1 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '8%'}}>
                   Platz
                 </th>
-                <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                <th className="px-1 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '10%'}}>
                   Status
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
+                <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '12%'}}>
                   Berater
                 </th>
-                <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                <th className="px-2 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '12%'}}>
                   Preis
                 </th>
-                <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                <th className="px-1 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '8%'}}>
                   Aktionen
                 </th>
               </tr>
@@ -392,68 +392,73 @@ const BookingOverview = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {Array.isArray(filteredBookings) && filteredBookings.map((booking) => (
                 <tr key={booking.id} className="hover:bg-gray-50">
-                  <td className="px-3 py-4 whitespace-nowrap w-1/6">
-                    <div>
+                  <td className="px-2 py-4" style={{width: '20%'}}>
+                    <div className="overflow-hidden">
                       <div className="text-sm font-medium text-gray-900 truncate">
                         {booking.kundenname}
                       </div>
-                      <div className="text-sm text-gray-500 truncate">
+                      <div className="text-xs text-gray-500 truncate">
                         {booking.kundennummer}
                       </div>
                     </div>
                   </td>
-                  <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900 w-1/8">
-                    <span className="truncate">{booking.belegung}</span>
-                  </td>
-                  <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900 w-1/6">
-                    <div className="text-xs">
-                      {formatDateFromISO(booking.zeitraum_von)}
-                      <br />
-                      bis {formatDateFromISO(booking.zeitraum_bis)}
+                  <td className="px-2 py-4 text-sm text-gray-900" style={{width: '15%'}}>
+                    <div className="truncate" title={booking.belegung}>
+                      {booking.belegung}
                     </div>
                   </td>
-                  <td className="px-2 py-4 whitespace-nowrap text-center w-16">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                      📍 {booking.platzierung}
+                  <td className="px-2 py-4 text-sm text-gray-900" style={{width: '15%'}}>
+                    <div className="text-xs">
+                      <div className="truncate">
+                        {formatDateFromISO(booking.zeitraum_von)}
+                      </div>
+                      <div className="truncate">
+                        bis {formatDateFromISO(booking.zeitraum_bis)}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-1 py-4 text-center" style={{width: '8%'}}>
+                    <span className="inline-flex items-center justify-center w-8 h-6 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      {booking.platzierung}
                     </span>
                   </td>
-                  <td className="px-2 py-4 whitespace-nowrap text-center w-20">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                  <td className="px-1 py-4 text-center" style={{width: '10%'}}>
+                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium truncate ${
                       booking.status === 'gebucht' ? 'bg-green-100 text-green-800' :
                       booking.status === 'reserviert' ? 'bg-yellow-100 text-yellow-800' :
                       'bg-gray-100 text-gray-800'
-                    }`}>
+                    }`} title={booking.status}>
                       {booking.status}
                     </span>
                   </td>
-                  <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900 w-1/8">
-                    <div className="flex items-center truncate">
-                      👤 <span className="truncate ml-1">{booking.berater}</span>
+                  <td className="px-2 py-4 text-sm text-gray-900" style={{width: '12%'}}>
+                    <div className="truncate" title={booking.berater}>
+                      {booking.berater}
                     </div>
                   </td>
-                  <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900 text-right w-24">
-                    <div className="text-xs">
-                      💰 {booking.verkaufspreis ? 
+                  <td className="px-2 py-4 text-sm text-gray-900 text-right" style={{width: '12%'}}>
+                    <div className="text-xs truncate">
+                      {booking.verkaufspreis ? 
                         `${parseFloat(booking.verkaufspreis).toLocaleString('de-DE', {
                           style: 'currency',
                           currency: 'EUR'
                         })}` : 
-                        <span className="text-gray-400">Nicht angegeben</span>
+                        <span className="text-gray-400">-</span>
                       }
                     </div>
                   </td>
-                  <td className="px-2 py-4 whitespace-nowrap text-center w-20">
+                  <td className="px-1 py-4 text-center" style={{width: '8%'}}>
                     <div className="flex gap-1 justify-center">
                       <button
                         onClick={() => openEditModal(booking)}
-                        className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
+                        className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 text-sm"
                         title="Buchung bearbeiten"
                       >
                         ✏️
                       </button>
                       <button
                         onClick={() => deleteBooking(booking.id)}
-                        className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
+                        className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 text-sm"
                         title="Buchung löschen"
                       >
                         🗑️
