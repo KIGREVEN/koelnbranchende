@@ -15,7 +15,7 @@ const BookingForm = ({ onBookingCreated }) => {
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
-  const categories = useCategories() || []; // Fallback zu leerem Array
+  const { categories, loading: categoriesLoading, error: categoriesError } = useCategories();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
