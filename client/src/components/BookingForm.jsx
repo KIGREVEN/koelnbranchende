@@ -59,6 +59,21 @@ const BookingForm = ({ onBookingCreated }) => {
     return errors;
   };
 
+  // Konvertiert deutsches Datumsformat (dd.mm.yyyy) zu ISO 8601
+  const convertDateToISO = (dateString, isEndDate = false) => {
+    if (!dateString) return '';
+    
+    // Parse deutsches Format: dd.mm.yyyy
+    const [day, month, year] = dateString.split('.');
+    
+    // Erstelle ISO 8601 Format
+    // Startdatum: 00:00:00, Enddatum: 23:59:59 für ganztägige Abdeckung
+    const time = isEndDate ? '23:59:59.000Z' : '00:00:00.000Z';
+    const isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${time}`;
+    
+    return isoDate;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -75,6 +90,16 @@ const BookingForm = ({ onBookingCreated }) => {
     setMessage({ type: '', text: '' });
 
     try {
+      // Konvertiere Daten für Backend (deutsches Format -> ISO 8601)
+      const apiData = {
+        ...formData,
+        zeitraum_von: convertDateToISO(formData.zeitraum_von, false),
+        zeitraum_bis: convertDateToISO(formData.zeitraum_bis, true),
+        platzierung: parseInt(formData.platzierung) // Stelle sicher, dass es eine Zahl ist
+      };
+
+      console.log('Sending data to backend:', apiData);
+
       // API-URL mit Fallback
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://koeln-branchen-api.onrender.com';
       const response = await fetch(`${baseUrl}/api/bookings`, {
@@ -82,7 +107,7 @@ const BookingForm = ({ onBookingCreated }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(apiData)
       });
 
       const data = await response.json();
