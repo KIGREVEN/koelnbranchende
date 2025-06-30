@@ -158,11 +158,12 @@ const AvailabilityChecker = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // Neue Datenstruktur für alle Platzierungen
+        // Neue Datenstruktur für alle Platzierungen - API gibt data.data zurück
+        const responseData = data.data || data; // Fallback für verschiedene API-Strukturen
         const validatedData = {
-          available_placements: Array.isArray(data.available_placements) ? data.available_placements : [],
-          occupied_placements: Array.isArray(data.occupied_placements) ? data.occupied_placements : [],
-          message: data.message || ''
+          available_placements: Array.isArray(responseData.available_placements) ? responseData.available_placements : [],
+          occupied_placements: Array.isArray(responseData.occupied_placements) ? responseData.occupied_placements : [],
+          message: data.message || responseData.message || ''
         };
         
         setResults(validatedData);
@@ -176,6 +177,7 @@ const AvailabilityChecker = () => {
         });
         
         console.log('Verfügbarkeitsprüfung für alle Platzierungen erfolgreich:', validatedData);
+        console.log('API Response Structure:', data);
       } else {
         setMessage({ type: 'error', text: data.message || 'Fehler bei der Verfügbarkeitsprüfung' });
       }
