@@ -10,7 +10,8 @@ const BookingForm = ({ onBookingCreated }) => {
     zeitraum_bis: '',
     platzierung: '1',
     status: 'reserviert',
-    berater: ''
+    berater: '',
+    verkaufspreis: ''
   });
 
   const [loading, setLoading] = useState(false);
@@ -340,6 +341,25 @@ const BookingForm = ({ onBookingCreated }) => {
             placeholder="Anna Schmidt"
             required
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+            💰 Verkaufspreis (optional)
+          </label>
+          <input
+            type="number"
+            name="verkaufspreis"
+            value={formData.verkaufspreis}
+            onChange={handleInputChange}
+            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            placeholder="1500.00"
+            min="0"
+            step="0.01"
+          />
+          <p className="text-sm text-gray-500 mt-1">
+            Verkaufspreis in Euro (z.B. 1500.00)
+          </p>
         </div>
 
         <button

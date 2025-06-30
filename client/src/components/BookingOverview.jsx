@@ -215,7 +215,7 @@ const BookingOverview = () => {
               placeholder="Name, Nummer, Belegung..."
               value={filters.search}
               onChange={(e) => handleFilterChange('search', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500"
             />
           </div>
 
@@ -229,7 +229,7 @@ const BookingOverview = () => {
               placeholder="z.B. Kanalreinigung"
               value={filters.belegung}
               onChange={(e) => handleFilterChange('belegung', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500"
             />
           </div>
 
@@ -243,7 +243,7 @@ const BookingOverview = () => {
               placeholder="z.B. Anna Schmidt"
               value={filters.berater}
               onChange={(e) => handleFilterChange('berater', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500"
             />
           </div>
 
@@ -354,6 +354,9 @@ const BookingOverview = () => {
                   Berater
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Verkaufspreis
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Aktionen
                 </th>
               </tr>
@@ -398,6 +401,17 @@ const BookingOverview = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <div className="flex items-center">
                       👤 {booking.berater}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <div className="flex items-center">
+                      💰 {booking.verkaufspreis ? 
+                        `${parseFloat(booking.verkaufspreis).toLocaleString('de-DE', {
+                          style: 'currency',
+                          currency: 'EUR'
+                        })}` : 
+                        <span className="text-gray-400">Nicht angegeben</span>
+                      }
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

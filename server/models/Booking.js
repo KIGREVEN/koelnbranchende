@@ -41,6 +41,10 @@ const bookingSchema = Joi.object({
     'string.empty': 'Berater ist erforderlich',
     'string.min': 'Berater muss mindestens 2 Zeichen lang sein',
     'string.max': 'Berater darf maximal 100 Zeichen lang sein'
+  }),
+  verkaufspreis: Joi.number().positive().precision(2).optional().messages({
+    'number.base': 'Verkaufspreis muss eine Zahl sein',
+    'number.positive': 'Verkaufspreis muss positiv sein'
   })
 });
 
@@ -116,8 +120,8 @@ class Booking {
     const queryText = `
       INSERT INTO bookings (
         kundenname, kundennummer, belegung, zeitraum_von, zeitraum_bis, 
-        platzierung, status, berater, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+        platzierung, status, berater, verkaufspreis, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
       RETURNING *
     `;
 
@@ -129,7 +133,8 @@ class Booking {
       validatedData.zeitraum_bis,
       validatedData.platzierung,
       validatedData.status,
-      validatedData.berater
+      validatedData.berater,
+      validatedData.verkaufspreis || null
     ];
 
     const result = await query(queryText, values);
@@ -226,8 +231,9 @@ class Booking {
     const queryText = `
       UPDATE bookings 
       SET kundenname = $1, kundennummer = $2, belegung = $3, zeitraum_von = $4, 
-          zeitraum_bis = $5, platzierung = $6, status = $7, berater = $8, updated_at = NOW()
-      WHERE id = $9
+          zeitraum_bis = $5, platzierung = $6, status = $7, berater = $8, 
+          verkaufspreis = $9, updated_at = NOW()
+      WHERE id = $10
       RETURNING *
     `;
 
@@ -240,6 +246,7 @@ class Booking {
       validatedData.platzierung,
       validatedData.status,
       validatedData.berater,
+      validatedData.verkaufspreis || null,
       id
     ];
 
