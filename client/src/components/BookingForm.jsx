@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import DatePicker from './DatePicker';
 
 const BookingForm = ({ onBookingCreated }) => {
   const [formData, setFormData] = useState({
@@ -53,6 +54,14 @@ const BookingForm = ({ onBookingCreated }) => {
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  // Spezielle Handler für DatePicker-Komponenten
+  const handleDateChange = (fieldName) => (value) => {
+    setFormData(prev => ({
+      ...prev,
+      [fieldName]: value
     }));
   };
 
@@ -255,14 +264,13 @@ const BookingForm = ({ onBookingCreated }) => {
             <label className="block text-sm font-medium mb-1 flex items-center gap-2">
               📅 Startdatum *
             </label>
-            <input
-              type="text"
+            <DatePicker
               name="zeitraum_von"
               value={formData.zeitraum_von}
-              onChange={handleInputChange}
+              onChange={handleDateChange('zeitraum_von')}
               placeholder="tt.mm.jjjj (z.B. 15.07.2024)"
-              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
+              className="w-full"
             />
           </div>
 
@@ -270,14 +278,13 @@ const BookingForm = ({ onBookingCreated }) => {
             <label className="block text-sm font-medium mb-1 flex items-center gap-2">
               📅 Enddatum *
             </label>
-            <input
-              type="text"
+            <DatePicker
               name="zeitraum_bis"
               value={formData.zeitraum_bis}
-              onChange={handleInputChange}
+              onChange={handleDateChange('zeitraum_bis')}
               placeholder="tt.mm.jjjj (z.B. 31.07.2024)"
-              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
+              className="w-full"
             />
           </div>
         </div>
