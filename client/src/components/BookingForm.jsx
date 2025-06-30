@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const BookingForm = ({ onBookingCreated }) => {
   const [formData, setFormData] = useState({
@@ -14,20 +14,39 @@ const BookingForm = ({ onBookingCreated }) => {
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
 
-  // Statische Kategorien - angepasst an Backend-Validierung
-  const staticCategories = [
-    { id: 1, name: 'Kanalreinigung' },
-    { id: 2, name: 'Gastronomie' },
-    { id: 3, name: 'Einzelhandel' },
-    { id: 4, name: 'Dienstleistungen' },
-    { id: 5, name: 'Handwerk' },
-    { id: 6, name: 'Gesundheit' },
-    { id: 7, name: 'Bildung' },
-    { id: 8, name: 'Immobilien' },
-    { id: 9, name: 'Automotive' },
-    { id: 10, name: 'IT & Technik' }
-  ];
+  // Lade Kategorien von der API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setCategoriesLoading(true);
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://koeln-branchen-api.onrender.com';
+        const response = await fetch(`${baseUrl}/api/categories`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          // Backend gibt {success: true, data: [...]} zurück
+          const categoriesArray = Array.isArray(data.data) ? data.data : [];
+          setCategories(categoriesArray);
+          console.log('Kategorien erfolgreich geladen:', categoriesArray.length);
+        } else {
+          console.error('Fehler beim Laden der Kategorien:', response.status);
+          // Fallback zu leerer Liste
+          setCategories([]);
+        }
+      } catch (error) {
+        console.error('Netzwerkfehler beim Laden der Kategorien:', error);
+        // Fallback zu leerer Liste
+        setCategories([]);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -220,11 +239,12 @@ const BookingForm = ({ onBookingCreated }) => {
             onChange={handleInputChange}
             list="belegung-list"
             className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="z.B. Gastronomie, Einzelhandel..."
+            placeholder={categoriesLoading ? "Kategorien werden geladen..." : "z.B. Kanalreinigung"}
             required
+            disabled={categoriesLoading}
           />
           <datalist id="belegung-list">
-            {staticCategories.map(cat => (
+            {categories.map(cat => (
               <option key={cat.id} value={cat.name} />
             ))}
           </datalist>
