@@ -22,12 +22,13 @@ const BookingOverview = () => {
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://koeln-branchen-api.onrender.com';
       const response = await fetch(`${baseUrl}/api/bookings`);
       if (response.ok) {
-        const data = await response.json();
-        // Sicherheitsprüfung: Stelle sicher, dass data ein Array ist
-        const bookingsArray = Array.isArray(data) ? data : [];
+        const responseData = await response.json();
+        // Backend gibt Objekt mit {success, data, count, filters} zurück
+        const bookingsArray = Array.isArray(responseData.data) ? responseData.data : [];
         setBookings(bookingsArray);
         setFilteredBookings(bookingsArray);
         console.log('Buchungen erfolgreich geladen:', bookingsArray.length);
+        console.log('Backend Response:', responseData);
       } else {
         console.error('Fehler beim Laden der Buchungen:', response.status);
         // Fallback zu leerem Array

@@ -15,18 +15,18 @@ const BookingForm = ({ onBookingCreated }) => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
-  // Statische Kategorien als Fallback - eliminiert API-Abhängigkeit
+  // Statische Kategorien - angepasst an Backend-Validierung
   const staticCategories = [
-    { id: 1, name: 'Gastronomie' },
-    { id: 2, name: 'Einzelhandel' },
-    { id: 3, name: 'Dienstleistungen' },
-    { id: 4, name: 'Handwerk' },
-    { id: 5, name: 'Gesundheit' },
-    { id: 6, name: 'Bildung' },
-    { id: 7, name: 'Immobilien' },
-    { id: 8, name: 'Automotive' },
-    { id: 9, name: 'IT & Technik' },
-    { id: 10, name: 'Finanzdienstleistungen' }
+    { id: 1, name: 'Kanalreinigung' },
+    { id: 2, name: 'Gastronomie' },
+    { id: 3, name: 'Einzelhandel' },
+    { id: 4, name: 'Dienstleistungen' },
+    { id: 5, name: 'Handwerk' },
+    { id: 6, name: 'Gesundheit' },
+    { id: 7, name: 'Bildung' },
+    { id: 8, name: 'Immobilien' },
+    { id: 9, name: 'Automotive' },
+    { id: 10, name: 'IT & Technik' }
   ];
 
   const handleInputChange = (e) => {
@@ -85,13 +85,9 @@ const BookingForm = ({ onBookingCreated }) => {
         body: JSON.stringify(formData)
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
       const data = await response.json();
       
-      if (data.success) {
+      if (response.ok && data.success) {
         setMessage({ 
           type: 'success', 
           text: 'Buchung erfolgreich erstellt!' 
@@ -114,7 +110,19 @@ const BookingForm = ({ onBookingCreated }) => {
           onBookingCreated(data.data);
         }
       } else {
-        throw new Error(data.message || 'Unbekannter Fehler');
+        // Backend-Validierungsfehler behandeln
+        if (response.status === 400 && data.details) {
+          const errorMessages = data.details.map(detail => `${detail.field}: ${detail.message}`);
+          setMessage({ 
+            type: 'error', 
+            text: `Validierungsfehler: ${errorMessages.join(', ')}` 
+          });
+        } else {
+          setMessage({ 
+            type: 'error', 
+            text: data.message || `Fehler ${response.status}: ${response.statusText}` 
+          });
+        }
       }
     } catch (error) {
       console.error('Fehler beim Erstellen der Buchung:', error);
