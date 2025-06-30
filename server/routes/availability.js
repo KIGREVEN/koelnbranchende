@@ -253,9 +253,6 @@ router.get('/calendar', async (req, res, next) => {
   }
 });
 
-module.exports = router;
-
-
 // POST /api/availability/all - Check availability for all placements
 router.post('/all', async (req, res, next) => {
   try {
@@ -369,4 +366,6 @@ router.post('/all', async (req, res, next) => {
     next(error);
   }
 });
+
+module.exports = router;
 
