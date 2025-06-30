@@ -202,7 +202,11 @@ class Booking {
       throw new Error('Booking not found');
     }
 
-    const validatedData = this.validate({ ...existingBooking, ...updateData });
+    // Only validate the update data, not the existing booking fields
+    const validatedData = this.validate(updateData);
+
+    // Merge existing data with validated update data for conflict checking
+    const mergedData = { ...existingBooking, ...validatedData };
 
     const categoryExists = await Category.exists(validatedData.belegung);
     if (!categoryExists) {
@@ -212,12 +216,12 @@ class Booking {
       throw error;
     }
 
-    // Check for conflicts (excluding current booking)
+    // Check for conflicts (excluding current booking) using merged data
     const conflicts = await this.checkConflict(
-      validatedData.belegung,
-      validatedData.platzierung,
-      validatedData.zeitraum_von,
-      validatedData.zeitraum_bis,
+      mergedData.belegung,
+      mergedData.platzierung,
+      mergedData.zeitraum_von,
+      mergedData.zeitraum_bis,
       id
     );
 
@@ -238,15 +242,15 @@ class Booking {
     `;
 
     const values = [
-      validatedData.kundenname,
-      validatedData.kundennummer,
-      validatedData.belegung,
-      validatedData.zeitraum_von,
-      validatedData.zeitraum_bis,
-      validatedData.platzierung,
-      validatedData.status,
-      validatedData.berater,
-      validatedData.verkaufspreis || null,
+      mergedData.kundenname,
+      mergedData.kundennummer,
+      mergedData.belegung,
+      mergedData.zeitraum_von,
+      mergedData.zeitraum_bis,
+      mergedData.platzierung,
+      mergedData.status,
+      mergedData.berater,
+      mergedData.verkaufspreis || null,
       id
     ];
 

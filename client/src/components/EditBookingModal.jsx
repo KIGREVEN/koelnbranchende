@@ -123,10 +123,14 @@ const EditBookingModal = ({ booking, isOpen, onClose, onBookingUpdated }) => {
       };
 
       const bookingData = {
-        ...formData,
+        kundenname: formData.kundenname.trim(),
+        kundennummer: formData.kundennummer.trim(),
+        belegung: formData.belegung.trim(),
         zeitraum_von: formatDateForAPI(formData.zeitraum_von),
         zeitraum_bis: formatEndDateForAPI(formData.zeitraum_bis),
         platzierung: parseInt(formData.platzierung),
+        status: formData.status,
+        berater: formData.berater.trim(),
         verkaufspreis: formData.verkaufspreis ? parseFloat(formData.verkaufspreis) : null
       };
 
