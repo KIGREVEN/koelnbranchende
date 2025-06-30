@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import DatePicker from './DatePicker'; // Import der neuen DatePicker-Komponente
+import EditBookingModal from './EditBookingModal';
 
 const BookingOverview = () => {
   const [bookings, setBookings] = useState([]);
@@ -14,6 +15,10 @@ const BookingOverview = () => {
     startDate: '', // Neuer Datumsfilter
     endDate: ''    // Neuer Datumsfilter
   });
+
+  // Edit Modal State
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
 
   // Lade Buchungen
   const fetchBookings = async () => {
@@ -173,6 +178,29 @@ const BookingOverview = () => {
     } catch (error) {
       alert('Netzwerkfehler beim Löschen');
     }
+  };
+
+  // Buchung bearbeiten
+  const openEditModal = (booking) => {
+    setSelectedBooking(booking);
+    setEditModalOpen(true);
+  };
+
+  const closeEditModal = () => {
+    setEditModalOpen(false);
+    setSelectedBooking(null);
+  };
+
+  const handleBookingUpdated = (updatedBooking) => {
+    // Aktualisiere die Buchungsliste
+    setBookings(prevBookings => 
+      prevBookings.map(booking => 
+        booking.id === updatedBooking.id ? updatedBooking : booking
+      )
+    );
+    
+    // Wende Filter erneut an
+    applyFilters();
   };
 
   if (loading) {
@@ -415,13 +443,22 @@ const BookingOverview = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => deleteBooking(booking.id)}
-                      className="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50"
-                      title="Buchung löschen"
-                    >
-                      🗑️
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => openEditModal(booking)}
+                        className="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50"
+                        title="Buchung bearbeiten"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => deleteBooking(booking.id)}
+                        className="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50"
+                        title="Buchung löschen"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -435,6 +472,14 @@ const BookingOverview = () => {
           </div>
         )}
       </div>
+
+      {/* Edit Booking Modal */}
+      <EditBookingModal
+        booking={selectedBooking}
+        isOpen={editModalOpen}
+        onClose={closeEditModal}
+        onBookingUpdated={handleBookingUpdated}
+      />
     </div>
   );
 };
