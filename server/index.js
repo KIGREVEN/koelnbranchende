@@ -11,6 +11,7 @@ const { testConnection, query } = require('./config/database');
 const bookingRoutes = require('./routes/bookings');
 const availabilityRoutes = require('./routes/availability');
 const categoryRoutes = require('./routes/categories');
+const migrateRoutes = require('./routes/migrate');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -172,6 +173,7 @@ app.post('/api/admin/seed', async (req, res) => {
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/availability', availabilityRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/migrate', migrateRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
