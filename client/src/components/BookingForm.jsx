@@ -16,7 +16,7 @@ const BookingForm = ({ onBookingCreated }) => {
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
-  const categories = useCategories();
+  const categories = useCategories() || []; // Fallback zu leerem Array
 
   const handleInputChange = (e) => {
     setFormData(prev => ({
@@ -211,7 +211,7 @@ const BookingForm = ({ onBookingCreated }) => {
             required
           />
           <datalist id="belegung-list">
-            {categories.map(cat => (
+            {Array.isArray(categories) && categories.map(cat => (
               <option key={cat.id} value={cat.name} />
             ))}
           </datalist>
