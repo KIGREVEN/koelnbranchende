@@ -67,6 +67,27 @@ GET /health
 }
 ```
 
+## 🗂️ Branchen (Categories)
+
+### GET /api/categories
+
+Liefert alle verfügbaren Branchen. Optional kann mit dem Query-Parameter `search` nach einem Teilstring gefiltert werden.
+
+**Request:**
+```http
+GET /api/categories?search=kanal
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    { "id": 1, "name": "Kanalreinigung" }
+  ]
+}
+```
+
 ## 📅 Buchungen (Bookings)
 
 ### GET /api/bookings

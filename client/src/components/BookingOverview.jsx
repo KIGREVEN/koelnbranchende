@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import useCategories from '../hooks/useCategories';
 
 const BookingOverview = () => {
   const [bookings, setBookings] = useState([]);
   const [filteredBookings, setFilteredBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const categories = useCategories();
   
   const [filters, setFilters] = useState({
     search: '',
@@ -191,11 +193,17 @@ const BookingOverview = () => {
               </label>
               <input
                 type="text"
-                placeholder="z.B. Gastronomie"
+                list="filter-belegung-list"
+                placeholder="z.B. Kanalreinigung"
                 value={filters.belegung}
                 onChange={(e) => handleFilterChange('belegung', e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
+              <datalist id="filter-belegung-list">
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.name} />
+                ))}
+              </datalist>
             </div>
 
             <div>
