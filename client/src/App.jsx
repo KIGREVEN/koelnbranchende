@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom'
-import { Calendar, Plus, Search, List, Menu, X } from 'lucide-react'
+import { Plus, Search, List, Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import BookingForm from './components/BookingForm'
@@ -26,10 +26,11 @@ function Navigation() {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
-              <Calendar className="h-8 w-8 text-red-600" />
-              <span className="text-xl font-bold text-gray-900">
-                Köln Branchen Portal
-              </span>
+              <img 
+                src="/koeln-branchen-logo.png" 
+                alt="Köln Branchen Guide" 
+                className="h-10 w-auto"
+              />
             </Link>
           </div>
 
@@ -115,7 +116,7 @@ function Dashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Aktive Buchungen</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <List className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">-</div>
