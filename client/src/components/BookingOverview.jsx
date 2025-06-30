@@ -1,44 +1,34 @@
 import { useState, useEffect } from 'react';
-import useCategories from '../hooks/useCategories';
+import DatePicker from './DatePicker'; // Import der neuen DatePicker-Komponente
 
 const BookingOverview = () => {
   const [bookings, setBookings] = useState([]);
   const [filteredBookings, setFilteredBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const categories = useCategories();
-  
   const [filters, setFilters] = useState({
     search: '',
     belegung: '',
     berater: '',
-    status: 'all', // Standardwert statt leer
-    platzierung: 'all' // Standardwert statt leer
+    status: '',
+    platzierung: '',
+    startDate: '', // Neuer Datumsfilter
+    endDate: ''    // Neuer Datumsfilter
   });
 
-  // Konvertiert ISO Datum zu tt.mm.jjjj Format
-  const formatDateForDisplay = (isoString) => {
-    const date = new Date(isoString);
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}.${month}.${year}`;
-  };
-
+  // Lade Buchungen
   const fetchBookings = async () => {
     try {
       setLoading(true);
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/bookings`);
-      const data = await response.json();
-      
       if (response.ok) {
-        setBookings(data.data || []);
-        setError('');
+        const data = await response.json();
+        setBookings(data);
+        setFilteredBookings(data);
       } else {
-        setError(data.message || 'Fehler beim Laden der Buchungen');
+        console.error('Fehler beim Laden der Buchungen');
       }
     } catch (error) {
-      setError('Netzwerkfehler. Bitte versuchen Sie es erneut.');
+      console.error('Netzwerkfehler:', error);
     } finally {
       setLoading(false);
     }
@@ -48,58 +38,109 @@ const BookingOverview = () => {
     fetchBookings();
   }, []);
 
-  useEffect(() => {
-    let filtered = bookings;
-
-    // Textsuche
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      filtered = filtered.filter(booking => 
-        booking.kundenname.toLowerCase().includes(searchLower) ||
-        booking.kundennummer.toLowerCase().includes(searchLower) ||
-        booking.belegung.toLowerCase().includes(searchLower) ||
-        booking.berater.toLowerCase().includes(searchLower)
-      );
-    }
-
-    // Belegung Filter
-    if (filters.belegung) {
-      filtered = filtered.filter(booking => 
-        booking.belegung.toLowerCase().includes(filters.belegung.toLowerCase())
-      );
-    }
-
-    // Berater Filter
-    if (filters.berater) {
-      filtered = filtered.filter(booking => 
-        booking.berater.toLowerCase().includes(filters.berater.toLowerCase())
-      );
-    }
-
-    // Status Filter
-    if (filters.status && filters.status !== 'all') {
-      filtered = filtered.filter(booking => booking.status === filters.status);
-    }
-
-    // Platzierung Filter
-    if (filters.platzierung && filters.platzierung !== 'all') {
-      filtered = filtered.filter(booking => booking.platzierung.toString() === filters.platzierung);
-    }
-
-    setFilteredBookings(filtered);
-  }, [bookings, filters]);
-
+  // Filter-Handler
   const handleFilterChange = (name, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    const newFilters = { ...filters, [name]: value };
+    setFilters(newFilters);
+    applyFilters(newFilters);
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm('Sind Sie sicher, dass Sie diese Buchung löschen möchten?')) {
-      return;
-    }
+  // Datumsfilter-Handler
+  const handleDateFilterChange = (name) => (value) => {
+    handleFilterChange(name, value);
+  };
+
+  // Parse date from string (dd.mm.yyyy format)
+  const parseDate = (dateString) => {
+    if (!dateString) return null;
+    const parts = dateString.split('.');
+    if (parts.length !== 3) return null;
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const year = parseInt(parts[2], 10);
+    const date = new Date(year, month, day);
+    return isNaN(date.getTime()) ? null : date;
+  };
+
+  // Format date from ISO to dd.mm.yyyy
+  const formatDateFromISO = (isoString) => {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}.${month}.${year}`;
+  };
+
+  // Filter anwenden
+  const applyFilters = (currentFilters) => {
+    let filtered = bookings.filter(booking => {
+      // Text-basierte Filter
+      const matchesSearch = !currentFilters.search || 
+        booking.kundenname.toLowerCase().includes(currentFilters.search.toLowerCase()) ||
+        booking.kundennummer.toLowerCase().includes(currentFilters.search.toLowerCase()) ||
+        booking.belegung.toLowerCase().includes(currentFilters.search.toLowerCase());
+
+      const matchesBelegung = !currentFilters.belegung || 
+        booking.belegung.toLowerCase().includes(currentFilters.belegung.toLowerCase());
+
+      const matchesBerater = !currentFilters.berater || 
+        booking.berater.toLowerCase().includes(currentFilters.berater.toLowerCase());
+
+      const matchesStatus = !currentFilters.status || 
+        currentFilters.status === 'alle' || 
+        booking.status === currentFilters.status;
+
+      const matchesPlatzierung = !currentFilters.platzierung || 
+        currentFilters.platzierung === 'alle' || 
+        booking.platzierung.toString() === currentFilters.platzierung;
+
+      // Datumsfilter
+      let matchesDateRange = true;
+      if (currentFilters.startDate || currentFilters.endDate) {
+        const bookingStart = new Date(booking.zeitraum_von);
+        const bookingEnd = new Date(booking.zeitraum_bis);
+        
+        if (currentFilters.startDate) {
+          const filterStart = parseDate(currentFilters.startDate);
+          if (filterStart && bookingEnd < filterStart) {
+            matchesDateRange = false;
+          }
+        }
+        
+        if (currentFilters.endDate) {
+          const filterEnd = parseDate(currentFilters.endDate);
+          if (filterEnd && bookingStart > filterEnd) {
+            matchesDateRange = false;
+          }
+        }
+      }
+
+      return matchesSearch && matchesBelegung && matchesBerater && 
+             matchesStatus && matchesPlatzierung && matchesDateRange;
+    });
+
+    setFilteredBookings(filtered);
+  };
+
+  // Filter zurücksetzen
+  const resetFilters = () => {
+    const emptyFilters = {
+      search: '',
+      belegung: '',
+      berater: '',
+      status: '',
+      platzierung: '',
+      startDate: '',
+      endDate: ''
+    };
+    setFilters(emptyFilters);
+    setFilteredBookings(bookings);
+  };
+
+  // Buchung löschen
+  const deleteBooking = async (id) => {
+    if (!confirm('Sind Sie sicher, dass Sie diese Buchung löschen möchten?')) return;
 
     try {
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/bookings/${id}`, {
@@ -107,237 +148,260 @@ const BookingOverview = () => {
       });
 
       if (response.ok) {
-        await fetchBookings(); // Neu laden
+        fetchBookings(); // Neu laden
       } else {
-        const data = await response.json();
-        alert(data.message || 'Fehler beim Löschen der Buchung');
+        alert('Fehler beim Löschen der Buchung');
       }
     } catch (error) {
-      alert('Netzwerkfehler beim Löschen der Buchung');
+      alert('Netzwerkfehler beim Löschen');
     }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'vorreserviert':
-        return 'bg-green-100 text-green-800';
-      case 'reserviert':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'gebucht':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const clearFilters = () => {
-    setFilters({
-      search: '',
-      belegung: '',
-      berater: '',
-      status: 'all',
-      platzierung: 'all'
-    });
   };
 
   if (loading) {
     return (
-      <div className="w-full bg-white p-8 rounded-lg shadow-md">
-        <div className="flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
-          Buchungen werden geladen...
-        </div>
+      <div className="flex justify-center items-center h-64">
+        <div className="text-lg">Lade Buchungen...</div>
       </div>
     );
   }
 
   return (
-    <div className="w-full space-y-6">
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-          📅 Buchungsübersicht
-        </h2>
-        <p className="text-gray-600 mb-6">Verwalten und filtern Sie alle Buchungen</p>
+    <div className="w-full max-w-7xl mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
+        📅 Buchungsübersicht
+      </h1>
+      <p className="text-gray-600 mb-6">Verwalten und filtern Sie alle Buchungen</p>
 
-        {/* Filter Section */}
-        <div className="space-y-4 mb-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium flex items-center gap-2">
-              🔍 Filter
-            </h3>
-            <button
-              onClick={clearFilters}
-              className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
+      {/* Filter-Sektion */}
+      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            🔍 Filter
+          </h2>
+          <button
+            onClick={resetFilters}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+          >
+            Filter zurücksetzen
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Allgemeine Suche */}
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              🔍 Suche
+            </label>
+            <input
+              type="text"
+              placeholder="Name, Nummer, Belegung..."
+              value={filters.search}
+              onChange={(e) => handleFilterChange('search', e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Belegung */}
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              🏢 Belegung
+            </label>
+            <input
+              type="text"
+              placeholder="z.B. Kanalreinigung"
+              value={filters.belegung}
+              onChange={(e) => handleFilterChange('belegung', e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Berater */}
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              👨‍💼 Berater
+            </label>
+            <input
+              type="text"
+              placeholder="z.B. Anna Schmidt"
+              value={filters.berater}
+              onChange={(e) => handleFilterChange('berater', e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Status */}
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Status
+            </label>
+            <select
+              value={filters.status}
+              onChange={(e) => handleFilterChange('status', e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
             >
-              Filter zurücksetzen
+              <option value="">Alle Status</option>
+              <option value="vorreserviert">vorreserviert</option>
+              <option value="reserviert">Reserviert</option>
+              <option value="gebucht">Gebucht</option>
+            </select>
+          </div>
+
+          {/* Platzierung */}
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              📍 Platzierung
+            </label>
+            <select
+              value={filters.platzierung}
+              onChange={(e) => handleFilterChange('platzierung', e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Alle Platzierungen</option>
+              <option value="1">Platzierung 1</option>
+              <option value="2">Platzierung 2</option>
+              <option value="3">Platzierung 3</option>
+              <option value="4">Platzierung 4</option>
+              <option value="5">Platzierung 5</option>
+              <option value="6">Platzierung 6</option>
+            </select>
+          </div>
+
+          {/* Startdatum Filter */}
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              📅 Von Datum
+            </label>
+            <DatePicker
+              value={filters.startDate}
+              onChange={handleDateFilterChange('startDate')}
+              placeholder="tt.mm.jjjj"
+              name="startDate"
+            />
+          </div>
+
+          {/* Enddatum Filter */}
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              📅 Bis Datum
+            </label>
+            <DatePicker
+              value={filters.endDate}
+              onChange={handleDateFilterChange('endDate')}
+              placeholder="tt.mm.jjjj"
+              name="endDate"
+            />
+          </div>
+
+          {/* Aktualisieren Button */}
+          <div className="flex items-end">
+            <button
+              onClick={fetchBookings}
+              className="w-full p-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center justify-center gap-2"
+            >
+              🔄 Aktualisieren
             </button>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1 flex items-center gap-2">
-                🔍 Suche
-              </label>
-              <input
-                type="text"
-                placeholder="Name, Nummer, Belegung..."
-                value={filters.search}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
+        </div>
+      </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1 flex items-center gap-2">
-                🏢 Belegung
-              </label>
-              <input
-                type="text"
-                list="filter-belegung-list"
-                placeholder="z.B. Kanalreinigung"
-                value={filters.belegung}
-                onChange={(e) => handleFilterChange('belegung', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-              <datalist id="filter-belegung-list">
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.name} />
-                ))}
-              </datalist>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1 flex items-center gap-2">
-                👨‍💼 Berater
-              </label>
-              <input
-                type="text"
-                placeholder="z.B. Anna Schmidt"
-                value={filters.berater}
-                onChange={(e) => handleFilterChange('berater', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Status</label>
-              <select
-                value={filters.status}
-                onChange={(e) => handleFilterChange('status', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="all">Alle Status</option>
-                <option value="vorreserviert">vorreserviert</option>
-                <option value="reserviert">Reserviert</option>
-                <option value="gebucht">Gebucht</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1 flex items-center gap-2">
-                📍 Platzierung
-              </label>
-              <select
-                value={filters.platzierung}
-                onChange={(e) => handleFilterChange('platzierung', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="all">Alle Platzierungen</option>
-                {[1, 2, 3, 4, 5, 6].map(num => (
-                  <option key={num} value={num.toString()}>Platzierung {num}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex items-end">
-              <button
-                onClick={fetchBookings}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center justify-center gap-2"
-              >
-                🔄 Aktualisieren
-              </button>
-            </div>
-          </div>
+      {/* Ergebnisse */}
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="p-4 border-b border-gray-200">
+          <p className="text-sm text-gray-600">
+            {filteredBookings.length} von {bookings.length} Buchungen angezeigt
+          </p>
         </div>
 
-        {error && (
-          <div className="p-3 rounded-md bg-red-50 text-red-700 border border-red-200 mb-4">
-            ❌ {error}
-          </div>
-        )}
-
-        {/* Results Summary */}
-        <div className="mb-4 text-sm text-gray-600">
-          {filteredBookings.length} von {bookings.length} Buchungen angezeigt
-        </div>
-
-        {/* Table */}
-        <div className="border rounded-md overflow-x-auto">
+        {/* Tabelle */}
+        <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Kunde</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Belegung</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Zeitraum</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Platzierung</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Status</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Berater</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Aktionen</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Kunde
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Belegung
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Zeitraum
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Platzierung
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Berater
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Aktionen
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredBookings.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                    Keine Buchungen gefunden
+              {filteredBookings.map((booking) => (
+                <tr key={booking.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {booking.kundenname}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {booking.kundennummer}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {booking.belegung}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <div>
+                      {formatDateFromISO(booking.zeitraum_von)}
+                      <br />
+                      bis {formatDateFromISO(booking.zeitraum_bis)}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      📍 {booking.platzierung}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      booking.status === 'gebucht' ? 'bg-green-100 text-green-800' :
+                      booking.status === 'reserviert' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {booking.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <div className="flex items-center">
+                      👤 {booking.berater}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button
+                      onClick={() => deleteBooking(booking.id)}
+                      className="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50"
+                      title="Buchung löschen"
+                    >
+                      🗑️
+                    </button>
                   </td>
                 </tr>
-              ) : (
-                filteredBookings.map((booking) => (
-                  <tr key={booking.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <div>
-                        <div className="font-medium text-gray-900">{booking.kundenname}</div>
-                        <div className="text-sm text-gray-500">{booking.kundennummer}</div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900">{booking.belegung}</td>
-                    <td className="px-4 py-3">
-                      <div className="text-sm">
-                        <div className="text-gray-900">{formatDateForDisplay(booking.zeitraum_von)}</div>
-                        <div className="text-gray-500">bis {formatDateForDisplay(booking.zeitraum_bis)}</div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2 text-sm text-gray-900">
-                        📍 {booking.platzierung}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
-                        {booking.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2 text-sm text-gray-900">
-                        👤 {booking.berater}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => handleDelete(booking.id)}
-                        className="text-red-600 hover:text-red-700 p-1 rounded"
-                        title="Buchung löschen"
-                      >
-                        🗑️
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
         </div>
+
+        {filteredBookings.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-gray-500">Keine Buchungen gefunden.</p>
+          </div>
+        )}
       </div>
     </div>
   );

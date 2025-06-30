@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import useCategories from '../hooks/useCategories';
-import DatePicker from './DatePicker'; // Import der neuen DatePicker-Komponente
 
 const BookingForm = ({ onBookingCreated }) => {
   const [formData, setFormData] = useState({
@@ -19,14 +18,7 @@ const BookingForm = ({ onBookingCreated }) => {
   const categories = useCategories();
 
   const handleInputChange = (e) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
-  };
-
-  // Spezielle Handler für DatePicker-Komponenten
-  const handleDateChange = (name) => (value) => {
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -50,8 +42,8 @@ const BookingForm = ({ onBookingCreated }) => {
     const [day, month, year] = dateString.split('.').map(Number);
     const date = new Date(year, month - 1, day);
     
-    return date.getFullYear() === year &&
-           date.getMonth() === month - 1 &&
+    return date.getFullYear() === year && 
+           date.getMonth() === month - 1 && 
            date.getDate() === day;
   };
 
@@ -126,9 +118,6 @@ const BookingForm = ({ onBookingCreated }) => {
 
       if (response.ok) {
         setMessage({ type: 'success', text: 'Buchung erfolgreich erstellt!' });
-        if (onBookingCreated) onBookingCreated();
-        
-        // Formular zurücksetzen
         setFormData({
           kundenname: '',
           kundennummer: '',
@@ -139,13 +128,16 @@ const BookingForm = ({ onBookingCreated }) => {
           status: 'reserviert',
           berater: ''
         });
-      } else if (response.status === 409) {
-        setMessage({
-          type: 'error',
-          text: 'Konflikt: Ein Termin für diese Belegung, Platzierung und Zeitraum ist bereits vorhanden!'
-        });
+        if (onBookingCreated) onBookingCreated();
       } else {
-        setMessage({ type: 'error', text: data.message || 'Fehler beim Erstellen der Buchung' });
+        if (response.status === 409) {
+          setMessage({ 
+            type: 'error', 
+            text: 'Konflikt: Ein Termin für diese Belegung, Platzierung und Zeitraum ist bereits vorhanden.' 
+          });
+        } else {
+          setMessage({ type: 'error', text: data.message || 'Fehler beim Erstellen der Buchung' });
+        }
       }
     } catch (error) {
       setMessage({ type: 'error', text: 'Netzwerkfehler. Bitte versuchen Sie es erneut.' });
@@ -160,9 +152,8 @@ const BookingForm = ({ onBookingCreated }) => {
         📅 Neue Buchung erstellen
       </h2>
       <p className="text-gray-600 mb-6">Erstellen Sie eine neue Buchung für das Köln Branchen Portal</p>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Kundenname und Kundennummer */}
+      
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1 flex items-center gap-2">
@@ -174,11 +165,11 @@ const BookingForm = ({ onBookingCreated }) => {
               value={formData.kundenname}
               onChange={handleInputChange}
               placeholder="Max Mustermann"
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium mb-1 flex items-center gap-2">
               🆔 Kundennummer *
@@ -189,13 +180,12 @@ const BookingForm = ({ onBookingCreated }) => {
               value={formData.kundennummer}
               onChange={handleInputChange}
               placeholder="K-001"
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
             />
           </div>
         </div>
 
-        {/* Belegung/Branche */}
         <div>
           <label className="block text-sm font-medium mb-1 flex items-center gap-2">
             🏢 Belegung/Branche *
@@ -207,7 +197,7 @@ const BookingForm = ({ onBookingCreated }) => {
             value={formData.belegung}
             onChange={handleInputChange}
             placeholder="z.B. Kanalreinigung"
-            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             required
           />
           <datalist id="belegung-list">
@@ -217,38 +207,40 @@ const BookingForm = ({ onBookingCreated }) => {
           </datalist>
         </div>
 
-        {/* Datumsfelder mit neuer DatePicker-Komponente */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1 flex items-center gap-2">
               📅 Startdatum *
             </label>
-            <DatePicker
-              value={formData.zeitraum_von}
-              onChange={handleDateChange('zeitraum_von')}
-              placeholder="tt.mm.jjjj (z.B. 15.07.2024)"
+            <input
+              type="text"
               name="zeitraum_von"
+              value={formData.zeitraum_von}
+              onChange={handleInputChange}
+              placeholder="tt.mm.jjjj (z.B. 15.07.2024)"
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
             />
             <p className="text-xs text-gray-500 mt-1">Format: tt.mm.jjjj</p>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium mb-1 flex items-center gap-2">
               📅 Enddatum *
             </label>
-            <DatePicker
-              value={formData.zeitraum_bis}
-              onChange={handleDateChange('zeitraum_bis')}
-              placeholder="tt.mm.jjjj (z.B. 20.07.2024)"
+            <input
+              type="text"
               name="zeitraum_bis"
+              value={formData.zeitraum_bis}
+              onChange={handleInputChange}
+              placeholder="tt.mm.jjjj (z.B. 20.07.2024)"
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
             />
             <p className="text-xs text-gray-500 mt-1">Format: tt.mm.jjjj</p>
           </div>
         </div>
 
-        {/* Platzierung und Status */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1 flex items-center gap-2">
@@ -258,18 +250,15 @@ const BookingForm = ({ onBookingCreated }) => {
               name="platzierung"
               value={formData.platzierung}
               onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
             >
-              <option value="1">Platzierung 1</option>
-              <option value="2">Platzierung 2</option>
-              <option value="3">Platzierung 3</option>
-              <option value="4">Platzierung 4</option>
-              <option value="5">Platzierung 5</option>
-              <option value="6">Platzierung 6</option>
+              {[1, 2, 3, 4, 5, 6].map(num => (
+                <option key={num} value={num.toString()}>Platzierung {num}</option>
+              ))}
             </select>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium mb-1 flex items-center gap-2">
               ⚠️ Status
@@ -278,7 +267,7 @@ const BookingForm = ({ onBookingCreated }) => {
               name="status"
               value={formData.status}
               onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="vorreserviert">vorreserviert</option>
               <option value="reserviert">Reserviert</option>
@@ -287,7 +276,6 @@ const BookingForm = ({ onBookingCreated }) => {
           </div>
         </div>
 
-        {/* Berater */}
         <div>
           <label className="block text-sm font-medium mb-1 flex items-center gap-2">
             👨‍💼 Berater *
@@ -298,25 +286,26 @@ const BookingForm = ({ onBookingCreated }) => {
             value={formData.berater}
             onChange={handleInputChange}
             placeholder="Anna Schmidt"
-            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             required
           />
         </div>
 
-        {/* Nachricht */}
         {message.text && (
-          <div className={`p-4 rounded-md ${
-            message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+          <div className={`p-4 rounded-md flex items-center gap-2 ${
+            message.type === 'success' 
+              ? 'bg-green-50 text-green-700 border border-green-200' 
+              : 'bg-red-50 text-red-700 border border-red-200'
           }`}>
+            {message.type === 'success' ? '✅' : '❌'}
             {message.text}
           </div>
         )}
 
-        {/* Submit Button */}
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-500 text-white py-3 px-6 rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
         >
           {loading ? '⏳ Wird erstellt...' : '✅ Buchung erstellen'}
         </button>
