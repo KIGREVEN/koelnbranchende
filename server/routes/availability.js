@@ -255,3 +255,118 @@ router.get('/calendar', async (req, res, next) => {
 
 module.exports = router;
 
+
+// POST /api/availability/all - Check availability for all placements
+router.post('/all', async (req, res, next) => {
+  try {
+    const { belegung, zeitraum_von, zeitraum_bis } = req.body;
+    
+    // Validate required parameters
+    if (!belegung || !zeitraum_von || !zeitraum_bis) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required parameters',
+        required: ['belegung', 'zeitraum_von', 'zeitraum_bis']
+      });
+    }
+
+    // Validate dates
+    const vonDate = new Date(zeitraum_von);
+    const bisDate = new Date(zeitraum_bis);
+    
+    if (isNaN(vonDate.getTime()) || isNaN(bisDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid date format. Use ISO 8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)'
+      });
+    }
+
+    if (bisDate <= vonDate) {
+      return res.status(400).json({
+        success: false,
+        error: 'zeitraum_bis must be after zeitraum_von'
+      });
+    }
+
+    const available_placements = [];
+    const occupied_placements = [];
+    
+    // Check all 6 placements
+    for (let platzierung = 1; platzierung <= 6; platzierung++) {
+      try {
+        const availability = await Booking.getAvailability(
+          belegung,
+          platzierung,
+          zeitraum_von,
+          zeitraum_bis
+        );
+        
+        if (availability.available) {
+          // Placement is free
+          available_placements.push({
+            platzierung,
+            name: `Position ${platzierung}`,
+            status: 'verfügbar'
+          });
+        } else {
+          // Placement is occupied - get details and calculate free_from date
+          const conflicts = availability.conflicts || [];
+          
+          if (conflicts.length > 0) {
+            // Find the latest end date among conflicts to determine when it's free again
+            let latestEndDate = null;
+            
+            conflicts.forEach(conflict => {
+              const conflictEndDate = new Date(conflict.zeitraum_bis);
+              if (!latestEndDate || conflictEndDate > latestEndDate) {
+                latestEndDate = conflictEndDate;
+              }
+            });
+            
+            // Add one day to the latest end date to get the "free from" date
+            const freeFromDate = new Date(latestEndDate);
+            freeFromDate.setDate(freeFromDate.getDate() + 1);
+            
+            // Use the first conflict for display (most relevant)
+            const mainConflict = conflicts[0];
+            
+            occupied_placements.push({
+              platzierung,
+              kundenname: mainConflict.kundenname,
+              kundennummer: mainConflict.kundennummer,
+              belegung: mainConflict.belegung,
+              zeitraum_von: mainConflict.zeitraum_von,
+              zeitraum_bis: mainConflict.zeitraum_bis,
+              status: mainConflict.status,
+              berater: mainConflict.berater,
+              free_from: freeFromDate.toISOString(),
+              conflicts_count: conflicts.length
+            });
+          }
+        }
+      } catch (error) {
+        console.error(`Error checking placement ${platzierung}:`, error);
+        // Continue with other placements even if one fails
+      }
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        belegung,
+        zeitraum_von,
+        zeitraum_bis,
+        available_placements,
+        occupied_placements,
+        summary: {
+          total_placements: 6,
+          available_count: available_placements.length,
+          occupied_count: occupied_placements.length
+        }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
