@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Booking = require('../models/Booking');
+const { authenticateToken } = require('../middleware/auth');
 
-// GET /api/availability/check - Check availability for specific criteria
-router.get('/check', async (req, res, next) => {
+// GET /api/availability/check - Check availability for specific criteria (Auth required)
+router.get('/check', authenticateToken, async (req, res, next) => {
   try {
     const { belegung, platzierung, zeitraum_von, zeitraum_bis } = req.query;
     
@@ -65,8 +66,8 @@ router.get('/check', async (req, res, next) => {
   }
 });
 
-// GET /api/availability/overview - Get availability overview for a time range
-router.get('/overview', async (req, res, next) => {
+// GET /api/availability/overview - Get availability overview for a time range (Auth required)
+router.get('/overview', authenticateToken, async (req, res, next) => {
   try {
     const { 
       belegung, 
@@ -164,8 +165,8 @@ router.get('/overview', async (req, res, next) => {
   }
 });
 
-// GET /api/availability/calendar - Get calendar view of bookings
-router.get('/calendar', async (req, res, next) => {
+// GET /api/availability/calendar - Get calendar view of bookings (Auth required)
+router.get('/calendar', authenticateToken, async (req, res, next) => {
   try {
     const { 
       start_date, 
@@ -253,8 +254,8 @@ router.get('/calendar', async (req, res, next) => {
   }
 });
 
-// POST /api/availability/all - Check availability for all placements
-router.post('/all', async (req, res, next) => {
+// POST /api/availability/all - Check availability for all placements (Auth required)
+router.post('/all', authenticateToken, async (req, res, next) => {
   try {
     const { belegung, zeitraum_von, zeitraum_bis } = req.body;
     

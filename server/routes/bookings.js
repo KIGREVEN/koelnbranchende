@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Booking = require('../models/Booking');
+const { authenticateToken, requireAdmin, optionalAuth } = require('../middleware/auth');
 
-// GET /api/bookings - Get all bookings with optional filters
-router.get('/', async (req, res, next) => {
+// GET /api/bookings - Get all bookings with optional filters (Auth required)
+router.get('/', authenticateToken, async (req, res, next) => {
   try {
     const filters = {
       belegung: req.query.belegung,
@@ -64,8 +65,8 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
-// POST /api/bookings - Create new booking
-router.post('/', async (req, res, next) => {
+// POST /api/bookings - Create new booking (Admin only)
+router.post('/', authenticateToken, requireAdmin, async (req, res, next) => {
   try {
     const bookingData = req.body;
     
@@ -106,8 +107,8 @@ router.post('/', async (req, res, next) => {
   }
 });
 
-// PUT /api/bookings/:id - Update booking
-router.put('/:id', async (req, res, next) => {
+// PUT /api/bookings/:id - Update booking (Admin only)
+router.put('/:id', authenticateToken, requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
@@ -162,8 +163,8 @@ router.put('/:id', async (req, res, next) => {
   }
 });
 
-// DELETE /api/bookings/:id - Delete booking
-router.delete('/:id', async (req, res, next) => {
+// DELETE /api/bookings/:id - Delete booking (Admin only)
+router.delete('/:id', authenticateToken, requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     
@@ -193,8 +194,8 @@ router.delete('/:id', async (req, res, next) => {
   }
 });
 
-// POST /api/bookings/cleanup - Clean up expired reservations
-router.post('/cleanup', async (req, res, next) => {
+// POST /api/bookings/cleanup - Clean up expired reservations (Admin only)
+router.post('/cleanup', authenticateToken, requireAdmin, async (req, res, next) => {
   try {
     const cleanedBookings = await Booking.cleanupExpiredReservations();
     
