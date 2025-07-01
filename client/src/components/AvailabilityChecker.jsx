@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import DatePicker from './DatePicker'; // Import der neuen DatePicker-Komponente
 
 const AvailabilityChecker = () => {
+  const { apiRequest } = useAuth();
   const [checkData, setCheckData] = useState({
     zeitraum_von: '',
     zeitraum_bis: '',
@@ -19,8 +21,7 @@ const AvailabilityChecker = () => {
     const fetchCategories = async () => {
       try {
         setCategoriesLoading(true);
-        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://koeln-branchen-api.onrender.com';
-        const response = await fetch(`${baseUrl}/api/categories`);
+        const response = await apiRequest('/api/categories');
         
         if (response.ok) {
           const data = await response.json();
@@ -37,7 +38,7 @@ const AvailabilityChecker = () => {
     };
 
     fetchCategories();
-  }, []);
+  }, [apiRequest]);
 
   // Handler für DatePicker-Komponenten
   const handleDateChange = (name) => (value) => {
@@ -147,7 +148,7 @@ const AvailabilityChecker = () => {
 
       console.log('Prüfe alle Platzierungen für Zeitraum:', apiData);
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://koeln-branchen-api.onrender.com'}/api/availability/all`, {
+      const response = await apiRequest('/api/availability/all', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -3,21 +3,36 @@ import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react
 import { Plus, Search, List, Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
+import { AuthProvider } from './context/AuthContext'
+import ProtectedRoute from './components/ProtectedRoute'
+import UserProfile from './components/UserProfile'
 import BookingForm from './components/BookingForm'
 import BookingOverview from './components/BookingOverview'
 import AvailabilityChecker from './components/AvailabilityChecker'
+import { useAuth } from './context/AuthContext'
 import './App.css'
 
 function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const location = useLocation()
+  const { isAuthenticated, isAdmin, hasPermission } = useAuth()
 
-  const navItems = [
-    { path: '/', label: 'Übersicht', icon: List },
-    { path: '/booking', label: 'Neue Buchung', icon: Plus },
-    { path: '/availability', label: 'Verfügbarkeit', icon: Search },
-  ]
+  // Rollenbasierte Navigation
+  const getNavItems = () => {
+    const baseItems = [
+      { path: '/', label: 'Übersicht', icon: List, permission: 'read' },
+      { path: '/availability', label: 'Verfügbarkeit', icon: Search, permission: 'availability' },
+    ]
 
+    // Nur Admins können neue Buchungen erstellen
+    if (isAdmin()) {
+      baseItems.splice(1, 0, { path: '/booking', label: 'Neue Buchung', icon: Plus, permission: 'create' })
+    }
+
+    return baseItems.filter(item => hasPermission(item.permission))
+  }
+
+  const navItems = getNavItems()
   const isActive = (path) => location.pathname === path
 
   return (
@@ -53,10 +68,20 @@ function Navigation() {
                 </Link>
               )
             })}
+            
+            {/* User Profile */}
+            {isAuthenticated() && (
+              <div className="ml-4">
+                <UserProfile />
+              </div>
+            )}
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
+          <div className="md:hidden flex items-center space-x-2">
+            {isAuthenticated() && (
+              <UserProfile />
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -98,18 +123,22 @@ function Navigation() {
 }
 
 function Dashboard() {
+  const { isAdmin, hasPermission } = useAuth()
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <div className="mt-4 sm:mt-0">
-          <Link to="/booking">
-            <Button className="w-full sm:w-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              Neue Buchung
-            </Button>
-          </Link>
-        </div>
+        {isAdmin() && (
+          <div className="mt-4 sm:mt-0">
+            <Link to="/booking">
+              <Button className="w-full sm:w-auto">
+                <Plus className="h-4 w-4 mr-2" />
+                Neue Buchung
+              </Button>
+            </Link>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -159,12 +188,14 @@ function Dashboard() {
             <CardTitle>Schnellzugriff</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Link to="/booking" className="block">
-              <Button variant="outline" className="w-full justify-start">
-                <Plus className="h-4 w-4 mr-2" />
-                Neue Buchung erstellen
-              </Button>
-            </Link>
+            {isAdmin() && (
+              <Link to="/booking" className="block">
+                <Button variant="outline" className="w-full justify-start">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Neue Buchung erstellen
+                </Button>
+              </Link>
+            )}
             <Link to="/availability" className="block">
               <Button variant="outline" className="w-full justify-start">
                 <Search className="h-4 w-4 mr-2" />
@@ -208,19 +239,30 @@ function Dashboard() {
 
 function App() {
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-50">
-        <Navigation />
-        <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-          <Routes>
-            <Route path="/" element={<BookingOverview />} />
-            <Route path="/booking" element={<BookingForm />} />
-            <Route path="/availability" element={<AvailabilityChecker />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-          </Routes>
-        </main>
-      </div>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <div className="min-h-screen bg-gray-50">
+          <ProtectedRoute>
+            <Navigation />
+            <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+              <Routes>
+                <Route path="/" element={<BookingOverview />} />
+                <Route 
+                  path="/booking" 
+                  element={
+                    <ProtectedRoute requireAdmin={true}>
+                      <BookingForm />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route path="/availability" element={<AvailabilityChecker />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+              </Routes>
+            </main>
+          </ProtectedRoute>
+        </div>
+      </Router>
+    </AuthProvider>
   )
 }
 

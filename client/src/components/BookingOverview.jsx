@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import DatePicker from './DatePicker'; // Import der neuen DatePicker-Komponente
 import EditBookingModal from './EditBookingModal';
 
 const BookingOverview = () => {
+  const { apiRequest, isAdmin, hasPermission } = useAuth();
   const [bookings, setBookings] = useState([]);
   const [filteredBookings, setFilteredBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,8 +26,7 @@ const BookingOverview = () => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://koeln-branchen-api.onrender.com';
-      const response = await fetch(`${baseUrl}/api/bookings`);
+      const response = await apiRequest('/api/bookings');
       if (response.ok) {
         const responseData = await response.json();
         // Backend gibt Objekt mit {success, data, count, filters} zurück
@@ -180,7 +181,7 @@ const BookingOverview = () => {
     if (!confirm('Sind Sie sicher, dass Sie diese Buchung löschen möchten?')) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/bookings/${id}`, {
+      const response = await apiRequest(`/api/bookings/${id}`, {
         method: 'DELETE'
       });
 
@@ -470,20 +471,29 @@ const BookingOverview = () => {
                   </td>
                   <td className="px-1 py-4 text-center" style={{width: '8%'}}>
                     <div className="flex gap-1 justify-center">
-                      <button
-                        onClick={() => openEditModal(booking)}
-                        className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 text-sm"
-                        title="Buchung bearbeiten"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => deleteBooking(booking.id)}
-                        className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 text-sm"
-                        title="Buchung löschen"
-                      >
-                        🗑️
-                      </button>
+                      {isAdmin() && (
+                        <>
+                          <button
+                            onClick={() => openEditModal(booking)}
+                            className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 text-sm"
+                            title="Buchung bearbeiten"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={() => deleteBooking(booking.id)}
+                            className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 text-sm"
+                            title="Buchung löschen"
+                          >
+                            🗑️
+                          </button>
+                        </>
+                      )}
+                      {!isAdmin() && (
+                        <span className="text-gray-400 text-xs" title="Nur für Administratoren">
+                          👁️
+                        </span>
+                      )}
                     </div>
                   </td>
                 </tr>
