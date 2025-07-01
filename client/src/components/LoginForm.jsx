@@ -40,20 +40,6 @@ const LoginForm = () => {
     // Bei Erfolg wird automatisch zur Hauptseite weitergeleitet
   };
 
-  const handleDemoLogin = async (role) => {
-    const credentials = {
-      admin: { username: 'admin', password: 'admin123' },
-      viewer: { username: 'viewer', password: 'viewer123' }
-    };
-
-    setFormData(credentials[role]);
-    const result = await login(credentials[role].username, credentials[role].password);
-    
-    if (!result.success) {
-      setLoginError(result.message || 'Demo-Anmeldung fehlgeschlagen');
-    }
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -165,49 +151,6 @@ const LoginForm = () => {
                 'Anmelden'
               )}
             </button>
-          </div>
-
-          {/* Demo Login Buttons */}
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-gray-50 text-gray-500">Demo-Anmeldung</span>
-              </div>
-            </div>
-
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('admin')}
-                disabled={loading}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-              >
-                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Admin
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('viewer')}
-                disabled={loading}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-              >
-                <svg className="h-5 w-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                Viewer
-              </button>
-            </div>
-
-            <div className="mt-4 text-xs text-gray-500 text-center">
-              <p><strong>Admin:</strong> Vollzugriff (Buchungen erstellen, bearbeiten, löschen)</p>
-              <p><strong>Viewer:</strong> Nur Verfügbarkeitsprüfung (schreibgeschützt)</p>
-            </div>
           </div>
         </form>
       </div>
