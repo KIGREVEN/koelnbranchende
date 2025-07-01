@@ -277,3 +277,90 @@ router.post('/users-fix', async (req, res) => {
   }
 });
 
+
+// Users Debug (Tabellen-Struktur prüfen)
+router.get('/users-debug', async (req, res) => {
+  try {
+    console.log('🔍 Debugging users table structure...');
+    
+    // Prüfe Tabellen-Struktur
+    const structureResult = await query(`
+      SELECT column_name, data_type, is_nullable, column_default
+      FROM information_schema.columns 
+      WHERE table_name = 'users' 
+      ORDER BY ordinal_position
+    `);
+    
+    // Prüfe aktuelle Benutzer
+    const usersResult = await query('SELECT * FROM users LIMIT 5');
+    
+    res.json({
+      success: true,
+      table_structure: structureResult.rows,
+      current_users: usersResult.rows,
+      debug_info: {
+        table_exists: structureResult.rows.length > 0,
+        user_count: usersResult.rows.length
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Users debug failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Users-Debug fehlgeschlagen',
+      error: error.message
+    });
+  }
+});
+
+// Users Fix v2 (mit email-Spalte)
+router.post('/users-fix-v2', async (req, res) => {
+  try {
+    console.log('🔧 Starting users password fix v2...');
+    
+    // Lösche alte Benutzer
+    await query('DELETE FROM users WHERE username IN ($1, $2)', ['admin', 'viewer']);
+    console.log('✅ Deleted old users');
+
+    // Erstelle neue Benutzer mit korrekten Hashes und email
+    const adminHash = '$2b$12$SKSM5BlYBsXT7smBLwgIp.D2KupS15rKwyIywtnGhHijjR6xpLa86';
+    const viewerHash = '$2b$12$q5fKMyPul9mE3/ne5u5dcOyzVZIe7nEceiBZ.RK/aE3rlzgy0A15q';
+
+    await query(`
+      INSERT INTO users (username, password_hash, role, email) 
+      VALUES ('admin', $1, 'admin', 'admin@koeln-branchen.local')
+    `, [adminHash]);
+
+    await query(`
+      INSERT INTO users (username, password_hash, role, email) 
+      VALUES ('viewer', $1, 'viewer', 'viewer@koeln-branchen.local')
+    `, [viewerHash]);
+    
+    console.log('✅ Created users with new password hashes and emails');
+
+    // Prüfe erstellte Benutzer
+    const usersResult = await query('SELECT id, username, role, email, created_at FROM users ORDER BY created_at');
+
+    console.log('🎉 Users password fix v2 completed successfully!');
+
+    res.json({
+      success: true,
+      message: 'Users-Passwort-Fix v2 erfolgreich abgeschlossen',
+      users: usersResult.rows,
+      credentials: {
+        admin: { username: 'admin', password: 'admin123', role: 'admin' },
+        viewer: { username: 'viewer', password: 'viewer123', role: 'viewer' }
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Users password fix v2 failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Users-Passwort-Fix v2 fehlgeschlagen',
+      error: error.message
+    });
+  }
+});
+
