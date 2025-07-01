@@ -89,12 +89,26 @@ const BookingOverview = () => {
   };
 
   // Filter anwenden
-  const applyFilters = (currentFilters) => {
+  const applyFilters = (currentFilters = filters) => {
     // Sicherheitsprüfung: Stelle sicher, dass bookings ein Array ist
     if (!Array.isArray(bookings)) {
       console.warn('Bookings ist kein Array:', bookings);
       setFilteredBookings([]);
       return;
+    }
+
+    // Sicherheitsprüfung: Stelle sicher, dass currentFilters definiert ist
+    if (!currentFilters) {
+      console.warn('CurrentFilters ist undefined, verwende leere Filter');
+      currentFilters = {
+        search: '',
+        belegung: '',
+        berater: '',
+        status: '',
+        platzierung: '',
+        startDate: '',
+        endDate: ''
+      };
     }
     
     let filtered = bookings.filter(booking => {
@@ -102,7 +116,7 @@ const BookingOverview = () => {
       const matchesSearch = !currentFilters.search || 
         booking.kundenname.toLowerCase().includes(currentFilters.search.toLowerCase()) ||
         booking.kundennummer.toLowerCase().includes(currentFilters.search.toLowerCase()) ||
-        booking.belegung.toLowerCase().includes(currentFilters.search.toLowerCase());
+        booking.belegung.toLowerCase().includes(currentFilters.belegung.toLowerCase());
 
       const matchesBelegung = !currentFilters.belegung || 
         booking.belegung.toLowerCase().includes(currentFilters.belegung.toLowerCase());
@@ -193,14 +207,21 @@ const BookingOverview = () => {
 
   const handleBookingUpdated = (updatedBooking) => {
     // Aktualisiere die Buchungsliste
-    setBookings(prevBookings => 
-      prevBookings.map(booking => 
-        booking.id === updatedBooking.id ? updatedBooking : booking
-      )
+    const updatedBookings = bookings.map(booking => 
+      booking.id === updatedBooking.id ? updatedBooking : booking
     );
+    setBookings(updatedBookings);
     
-    // Wende Filter erneut an
-    applyFilters();
+    // Aktualisiere auch die gefilterten Buchungen direkt
+    const updatedFilteredBookings = filteredBookings.map(booking => 
+      booking.id === updatedBooking.id ? updatedBooking : booking
+    );
+    setFilteredBookings(updatedFilteredBookings);
+    
+    // Wende Filter erneut an mit aktuellen Filtern (als Backup)
+    setTimeout(() => {
+      applyFilters(filters);
+    }, 100);
   };
 
   if (loading) {
