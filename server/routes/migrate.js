@@ -226,3 +226,54 @@ router.get('/status', async (req, res) => {
 
 module.exports = router;
 
+
+// Users Password Fix (für Debugging)
+router.post('/users-fix', async (req, res) => {
+  try {
+    console.log('🔧 Starting users password fix...');
+    
+    // Lösche alte Benutzer
+    await query('DELETE FROM users WHERE username IN ($1, $2)', ['admin', 'viewer']);
+    console.log('✅ Deleted old users');
+
+    // Erstelle neue Benutzer mit korrekten Hashes
+    const adminHash = '$2b$12$SKSM5BlYBsXT7smBLwgIp.D2KupS15rKwyIywtnGhHijjR6xpLa86';
+    const viewerHash = '$2b$12$q5fKMyPul9mE3/ne5u5dcOyzVZIe7nEceiBZ.RK/aE3rlzgy0A15q';
+
+    await query(`
+      INSERT INTO users (username, password_hash, role) 
+      VALUES ('admin', $1, 'admin')
+    `, [adminHash]);
+
+    await query(`
+      INSERT INTO users (username, password_hash, role) 
+      VALUES ('viewer', $1, 'viewer')
+    `, [viewerHash]);
+    
+    console.log('✅ Created users with new password hashes');
+
+    // Prüfe erstellte Benutzer
+    const usersResult = await query('SELECT id, username, role, created_at FROM users ORDER BY created_at');
+
+    console.log('🎉 Users password fix completed successfully!');
+
+    res.json({
+      success: true,
+      message: 'Users-Passwort-Fix erfolgreich abgeschlossen',
+      users: usersResult.rows,
+      credentials: {
+        admin: { username: 'admin', password: 'admin123', role: 'admin' },
+        viewer: { username: 'viewer', password: 'viewer123', role: 'viewer' }
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Users password fix failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Users-Passwort-Fix fehlgeschlagen',
+      error: error.message
+    });
+  }
+});
+
