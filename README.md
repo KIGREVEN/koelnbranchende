@@ -345,7 +345,7 @@ Dieses Projekt steht unter der MIT-Lizenz. Siehe [LICENSE](LICENSE) Datei für D
 
 ## 👥 Autoren
 
-- **Manus AI** - Entwicklung und Design
+- **Tobias Leyendecker** - Entwicklung und Design
 
 ## 🙏 Danksagungen
 
