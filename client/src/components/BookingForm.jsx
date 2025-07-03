@@ -91,10 +91,13 @@ const BookingForm = ({ onBookingCreated }) => {
 
   // Konvertiert deutsches Datumsformat (dd.mm.yyyy) zu ISO 8601
   const convertDateToISO = (dateString, isEndDate = false) => {
-    if (!dateString) return '';
+    if (!dateString || dateString.trim() === '') return null; // NULL für leere Werte
     
     // Parse deutsches Format: dd.mm.yyyy
     const [day, month, year] = dateString.split('.');
+    
+    // Validiere Teile
+    if (!day || !month || !year) return null;
     
     // Erstelle ISO 8601 Format
     // Startdatum: 00:00:00, Enddatum: 23:59:59 für ganztägige Abdeckung
@@ -124,7 +127,7 @@ const BookingForm = ({ onBookingCreated }) => {
       const apiData = {
         ...formData,
         zeitraum_von: convertDateToISO(formData.zeitraum_von, false),
-        zeitraum_bis: formData.zeitraum_bis ? convertDateToISO(formData.zeitraum_bis, true) : null, // NULL für offene Abos
+        zeitraum_bis: convertDateToISO(formData.zeitraum_bis, true), // convertDateToISO gibt bereits null zurück für leere Werte
         platzierung: parseInt(formData.platzierung) // Stelle sicher, dass es eine Zahl ist
       };
 
