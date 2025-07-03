@@ -91,13 +91,25 @@ const BookingForm = ({ onBookingCreated }) => {
 
   // Konvertiert deutsches Datumsformat (dd.mm.yyyy) zu ISO 8601
   const convertDateToISO = (dateString, isEndDate = false) => {
-    if (!dateString || dateString.trim() === '') return null; // NULL für leere Werte
+    if (!dateString || dateString.trim() === '') {
+      // Für Abo-Buchungen: Automatisch 31.12.2099 setzen wenn Enddatum leer
+      if (isEndDate) {
+        return '2099-12-31T23:59:59.000Z'; // Abo-Datum: 31.12.2099
+      }
+      return null; // Startdatum darf nicht leer sein
+    }
     
     // Parse deutsches Format: dd.mm.yyyy
     const [day, month, year] = dateString.split('.');
     
     // Validiere Teile
-    if (!day || !month || !year) return null;
+    if (!day || !month || !year) {
+      // Fallback für Abo-Buchungen
+      if (isEndDate) {
+        return '2099-12-31T23:59:59.000Z';
+      }
+      return null;
+    }
     
     // Erstelle ISO 8601 Format
     // Startdatum: 00:00:00, Enddatum: 23:59:59 für ganztägige Abdeckung
@@ -127,7 +139,7 @@ const BookingForm = ({ onBookingCreated }) => {
       const apiData = {
         ...formData,
         zeitraum_von: convertDateToISO(formData.zeitraum_von, false),
-        zeitraum_bis: convertDateToISO(formData.zeitraum_bis, true), // convertDateToISO gibt bereits null zurück für leere Werte
+        zeitraum_bis: convertDateToISO(formData.zeitraum_bis, true), // Automatisch 31.12.2099 für Abo-Buchungen
         platzierung: parseInt(formData.platzierung) // Stelle sicher, dass es eine Zahl ist
       };
 
@@ -291,7 +303,7 @@ const BookingForm = ({ onBookingCreated }) => {
               className="w-full"
             />
             <p className="text-xs text-gray-500 mt-1">
-              💡 Leer lassen für unbefristete Abo-Buchungen
+              💡 Leer lassen für unbefristete Abo-Buchungen (wird automatisch auf 31.12.2099 gesetzt)
             </p>
           </div>
         </div>

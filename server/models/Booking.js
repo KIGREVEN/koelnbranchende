@@ -76,12 +76,13 @@ class Booking {
     const params = [belegung, platzierung, zeitraum_von];
     let paramCount = 3;
     
-    if (zeitraum_bis === null) {
-      // Für offene Abos: Prüfe auf Konflikte ab dem Startdatum
+    if (zeitraum_bis === null || (zeitraum_bis && new Date(zeitraum_bis).getFullYear() === 2099)) {
+      // Für offene Abos (NULL oder 31.12.2099): Prüfe auf Konflikte ab dem Startdatum
       queryText += `
         AND (
-          -- Bestehende offene Abos (zeitraum_bis ist NULL)
+          -- Bestehende offene Abos (zeitraum_bis ist NULL oder 2099)
           zeitraum_bis IS NULL OR
+          EXTRACT(YEAR FROM zeitraum_bis) = 2099 OR
           -- Bestehende Buchungen, die nach dem neuen Startdatum enden
           zeitraum_bis > $3
         )
@@ -91,10 +92,10 @@ class Booking {
       paramCount++;
       queryText += `
         AND (
-          -- Offene Abos (zeitraum_bis ist NULL) blockieren alles ab zeitraum_von
-          (zeitraum_bis IS NULL AND zeitraum_von <= $4) OR
+          -- Offene Abos (zeitraum_bis ist NULL oder 2099) blockieren alles ab zeitraum_von
+          ((zeitraum_bis IS NULL OR EXTRACT(YEAR FROM zeitraum_bis) = 2099) AND zeitraum_von <= $4) OR
           -- Normale Buchungen mit Enddatum
-          (zeitraum_bis IS NOT NULL AND (
+          (zeitraum_bis IS NOT NULL AND EXTRACT(YEAR FROM zeitraum_bis) != 2099 AND (
             (zeitraum_von <= $3 AND zeitraum_bis > $3) OR
             (zeitraum_von < $4 AND zeitraum_bis >= $4) OR
             (zeitraum_von >= $3 AND zeitraum_bis <= $4)

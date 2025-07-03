@@ -316,7 +316,11 @@ router.post('/all', authenticateToken, async (req, res, next) => {
             let hasOpenSubscription = false;
             
             conflicts.forEach(conflict => {
-              if (conflict.zeitraum_bis === null) {
+              // Prüfe auf Abo-Buchungen (31.12.2099 oder NULL)
+              const isSubscription = conflict.zeitraum_bis === null || 
+                                   (conflict.zeitraum_bis && new Date(conflict.zeitraum_bis).getFullYear() === 2099);
+              
+              if (isSubscription) {
                 // Offenes Abo - nie wieder frei
                 hasOpenSubscription = true;
               } else {
@@ -340,7 +344,8 @@ router.post('/all', authenticateToken, async (req, res, next) => {
               status: mainConflict.status,
               berater: mainConflict.berater,
               conflicts_count: conflicts.length,
-              is_subscription: mainConflict.zeitraum_bis === null
+              is_subscription: mainConflict.zeitraum_bis === null || 
+                              (mainConflict.zeitraum_bis && new Date(mainConflict.zeitraum_bis).getFullYear() === 2099)
             };
 
             if (hasOpenSubscription) {
