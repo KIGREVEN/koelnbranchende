@@ -73,7 +73,6 @@ const BookingForm = ({ onBookingCreated }) => {
     if (!formData.kundennummer.trim()) errors.push('Kundennummer ist erforderlich');
     if (!formData.belegung.trim()) errors.push('Belegung ist erforderlich');
     if (!formData.zeitraum_von.trim()) errors.push('Startdatum ist erforderlich');
-    if (!formData.zeitraum_bis.trim()) errors.push('Enddatum ist erforderlich');
     if (!formData.berater.trim()) errors.push('Berater ist erforderlich');
 
     // Datumsvalidierung
@@ -81,6 +80,7 @@ const BookingForm = ({ onBookingCreated }) => {
     if (formData.zeitraum_von && !dateRegex.test(formData.zeitraum_von)) {
       errors.push('Startdatum muss im Format tt.mm.jjjj sein');
     }
+    // Enddatum ist optional (für Abo-Buchungen)
     if (formData.zeitraum_bis && !dateRegex.test(formData.zeitraum_bis)) {
       errors.push('Enddatum muss im Format tt.mm.jjjj sein');
     }
@@ -123,7 +123,7 @@ const BookingForm = ({ onBookingCreated }) => {
       const apiData = {
         ...formData,
         zeitraum_von: convertDateToISO(formData.zeitraum_von, false),
-        zeitraum_bis: convertDateToISO(formData.zeitraum_bis, true),
+        zeitraum_bis: formData.zeitraum_bis ? convertDateToISO(formData.zeitraum_bis, true) : null, // NULL für offene Abos
         platzierung: parseInt(formData.platzierung) // Stelle sicher, dass es eine Zahl ist
       };
 
@@ -277,16 +277,19 @@ const BookingForm = ({ onBookingCreated }) => {
 
           <div>
             <label className="block text-sm font-medium mb-1 flex items-center gap-2">
-              📅 Enddatum *
+              📅 Enddatum <span className="text-gray-500 text-xs">(optional für Abo-Buchungen)</span>
             </label>
             <DatePicker
               name="zeitraum_bis"
               value={formData.zeitraum_bis}
               onChange={handleDateChange('zeitraum_bis')}
-              placeholder="tt.mm.jjjj (z.B. 31.07.2024)"
-              required
+              placeholder="tt.mm.jjjj (leer = unbefristetes Abo)"
+              required={false}
               className="w-full"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              💡 Leer lassen für unbefristete Abo-Buchungen
+            </p>
           </div>
         </div>
 

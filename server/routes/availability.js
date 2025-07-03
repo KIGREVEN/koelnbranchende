@@ -313,22 +313,24 @@ router.post('/all', authenticateToken, async (req, res, next) => {
           if (conflicts.length > 0) {
             // Find the latest end date among conflicts to determine when it's free again
             let latestEndDate = null;
+            let hasOpenSubscription = false;
             
             conflicts.forEach(conflict => {
-              const conflictEndDate = new Date(conflict.zeitraum_bis);
-              if (!latestEndDate || conflictEndDate > latestEndDate) {
-                latestEndDate = conflictEndDate;
+              if (conflict.zeitraum_bis === null) {
+                // Offenes Abo - nie wieder frei
+                hasOpenSubscription = true;
+              } else {
+                const conflictEndDate = new Date(conflict.zeitraum_bis);
+                if (!latestEndDate || conflictEndDate > latestEndDate) {
+                  latestEndDate = conflictEndDate;
+                }
               }
             });
-            
-            // Add one day to the latest end date to get the "free from" date
-            const freeFromDate = new Date(latestEndDate);
-            freeFromDate.setDate(freeFromDate.getDate() + 1);
             
             // Use the first conflict for display (most relevant)
             const mainConflict = conflicts[0];
             
-            occupied_placements.push({
+            const occupiedPlacement = {
               platzierung,
               kundenname: mainConflict.kundenname,
               kundennummer: mainConflict.kundennummer,
@@ -337,9 +339,22 @@ router.post('/all', authenticateToken, async (req, res, next) => {
               zeitraum_bis: mainConflict.zeitraum_bis,
               status: mainConflict.status,
               berater: mainConflict.berater,
-              free_from: freeFromDate.toISOString(),
-              conflicts_count: conflicts.length
-            });
+              conflicts_count: conflicts.length,
+              is_subscription: mainConflict.zeitraum_bis === null
+            };
+
+            if (hasOpenSubscription) {
+              // Offenes Abo - nie wieder frei
+              occupiedPlacement.free_from = null;
+              occupiedPlacement.subscription_note = 'Unbefristetes Abo - Kündigung erforderlich';
+            } else if (latestEndDate) {
+              // Add one day to the latest end date to get the "free from" date
+              const freeFromDate = new Date(latestEndDate);
+              freeFromDate.setDate(freeFromDate.getDate() + 1);
+              occupiedPlacement.free_from = freeFromDate.toISOString();
+            }
+            
+            occupied_placements.push(occupiedPlacement);
           }
         }
       } catch (error) {

@@ -435,7 +435,10 @@ const BookingOverview = () => {
                         {formatDateFromISO(booking.zeitraum_von)}
                       </div>
                       <div className="truncate">
-                        bis {formatDateFromISO(booking.zeitraum_bis)}
+                        {booking.zeitraum_bis ? 
+                          `bis ${formatDateFromISO(booking.zeitraum_bis)}` : 
+                          <span className="text-blue-600 font-medium">🔄 Abo (unbefristet)</span>
+                        }
                       </div>
                     </div>
                   </td>

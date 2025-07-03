@@ -22,10 +22,9 @@ const bookingSchema = Joi.object({
     'date.base': 'Zeitraum von muss ein gültiges Datum sein',
     'any.required': 'Zeitraum von ist erforderlich'
   }),
-  zeitraum_bis: Joi.date().iso().min(Joi.ref('zeitraum_von')).required().messages({
+  zeitraum_bis: Joi.date().iso().min(Joi.ref('zeitraum_von')).optional().messages({
     'date.base': 'Zeitraum bis muss ein gültiges Datum sein',
-    'date.min': 'Zeitraum bis muss nach dem Startdatum liegen',
-    'any.required': 'Zeitraum bis ist erforderlich'
+    'date.min': 'Zeitraum bis muss nach dem Startdatum liegen'
   }),
   platzierung: Joi.number().integer().min(1).max(6).required().messages({
     'number.base': 'Platzierung muss eine Zahl sein',
@@ -73,13 +72,18 @@ class Booking {
         AND platzierung = $2 
         AND status IN ('reserviert', 'gebucht')
         AND (
-          (zeitraum_von <= $3 AND zeitraum_bis > $3) OR
-          (zeitraum_von < $4 AND zeitraum_bis >= $4) OR
-          (zeitraum_von >= $3 AND zeitraum_bis <= $4)
+          -- Offene Abos (zeitraum_bis ist NULL) blockieren alles ab zeitraum_von
+          (zeitraum_bis IS NULL AND zeitraum_von <= $4) OR
+          -- Normale Buchungen mit Enddatum
+          (zeitraum_bis IS NOT NULL AND (
+            (zeitraum_von <= $3 AND zeitraum_bis > $3) OR
+            (zeitraum_von < $4 AND zeitraum_bis >= $4) OR
+            (zeitraum_von >= $3 AND zeitraum_bis <= $4)
+          ))
         )
     `;
     
-    const params = [belegung, platzierung, zeitraum_von, zeitraum_bis];
+    const params = [belegung, platzierung, zeitraum_von, zeitraum_bis || '9999-12-31'];
     
     if (excludeId) {
       queryText += ' AND id != $5';
@@ -102,12 +106,12 @@ class Booking {
       throw error;
     }
     
-    // Check for conflicts
+    // Check for conflicts (handle optional zeitraum_bis for subscriptions)
     const conflicts = await this.checkConflict(
       validatedData.belegung,
       validatedData.platzierung,
       validatedData.zeitraum_von,
-      validatedData.zeitraum_bis
+      validatedData.zeitraum_bis || null
     );
 
     if (conflicts.length > 0) {
@@ -130,7 +134,7 @@ class Booking {
       validatedData.kundennummer,
       validatedData.belegung,
       validatedData.zeitraum_von,
-      validatedData.zeitraum_bis,
+      validatedData.zeitraum_bis || null, // NULL für offene Abos
       validatedData.platzierung,
       validatedData.status,
       validatedData.berater,
