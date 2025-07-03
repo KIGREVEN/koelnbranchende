@@ -71,6 +71,25 @@ class Booking {
       WHERE belegung = $1 
         AND platzierung = $2 
         AND status IN ('reserviert', 'gebucht')
+    `;
+    
+    const params = [belegung, platzierung, zeitraum_von];
+    let paramCount = 3;
+    
+    if (zeitraum_bis === null) {
+      // Für offene Abos: Prüfe auf Konflikte ab dem Startdatum
+      queryText += `
+        AND (
+          -- Bestehende offene Abos (zeitraum_bis ist NULL)
+          zeitraum_bis IS NULL OR
+          -- Bestehende Buchungen, die nach dem neuen Startdatum enden
+          zeitraum_bis > $3
+        )
+      `;
+    } else {
+      // Für normale Buchungen mit Enddatum
+      paramCount++;
+      queryText += `
         AND (
           -- Offene Abos (zeitraum_bis ist NULL) blockieren alles ab zeitraum_von
           (zeitraum_bis IS NULL AND zeitraum_von <= $4) OR
@@ -81,12 +100,13 @@ class Booking {
             (zeitraum_von >= $3 AND zeitraum_bis <= $4)
           ))
         )
-    `;
-    
-    const params = [belegung, platzierung, zeitraum_von, zeitraum_bis || '9999-12-31'];
+      `;
+      params.push(zeitraum_bis);
+    }
     
     if (excludeId) {
-      queryText += ' AND id != $5';
+      paramCount++;
+      queryText += ` AND id != $${paramCount}`;
       params.push(excludeId);
     }
 
