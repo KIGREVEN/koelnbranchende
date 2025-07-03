@@ -237,14 +237,6 @@ Eine realistische Schätzung des Aufwands und der Kosten, wenn dieses Projekt vo
 
 ### **💡 Zusätzliche Kostenfaktoren**
 
-#### **Laufende Betriebskosten (jährlich):**
-- **Hosting (Render.com)**: €600-1.200/Jahr
-- **Domain & SSL**: €50-100/Jahr
-- **Monitoring & Analytics**: €200-500/Jahr
-- **Backup & Security**: €300-600/Jahr
-- **Wartung & Updates**: €2.000-5.000/Jahr
-- **Gesamte Betriebskosten**: €3.150-7.400/Jahr
-
 #### **Versteckte Kosten bei externer Entwicklung:**
 - **Einarbeitung & Briefing**: 10-20 Stunden (€1.000-4.000)
 - **Kommunikations-Overhead**: 15-25% der Projektzeit
@@ -252,48 +244,11 @@ Eine realistische Schätzung des Aufwands und der Kosten, wenn dieses Projekt vo
 - **Nachbesserungen & Bugfixes**: 10-30% der ursprünglichen Entwicklungszeit
 - **Wissenstransfer & Dokumentation**: 15-25 Stunden (€1.500-5.000)
 
-### **🎯 ROI-Analyse & Business Value**
-
-#### **Quantifizierbare Einsparungen:**
-- **Zeitersparnis bei Buchungen**: 2 Stunden/Tag × 250 Arbeitstage × €50/Stunde = **€25.000/Jahr**
-- **Vermiedene Doppelbuchungen**: 5 Fälle/Jahr × €2.000 Schaden = **€10.000/Jahr**
-- **Reduzierte Verwaltungskosten**: 30% Effizienzsteigerung × €15.000 = **€4.500/Jahr**
-- **Verbesserte Kundenbetreuung**: Schwer quantifizierbar, geschätzt **€5.000-15.000/Jahr**
-
-**Gesamte jährliche Einsparungen: €44.500-54.500**
-
-#### **Return on Investment (ROI):**
-- **Interne Entwicklung**: ROI nach 7-9 Monaten
-- **Internationale Agentur**: ROI nach 10-12 Monaten
-- **Deutsche Premium-Agentur**: ROI nach 14-17 Monaten
-
-### **🏆 Fazit der Kostenanalyse**
-
-**Die Entwicklung mit KI-Unterstützung (Manus) hat folgende Vorteile gebracht:**
-
-1. **Drastische Kosteneinsparung**: €11.400-76.700 gespart (je nach Vergleichsszenario)
-2. **Extrem kurze Entwicklungszeit**: Wenige Tage statt 4-6 Wochen
-3. **Hohe Qualität**: Enterprise-Level-Features und Sicherheitsstandards
-4. **Vollständige Kontrolle**: Kein Vendor-Lock-in, vollständiger Quellcode-Zugang
-5. **Sofortige Verfügbarkeit**: Keine Wartezeiten auf externe Dienstleister
-
 **Ein einzelner Fullstack-Entwickler hätte für die Entwicklung dieses Projekts in dieser Qualität und mit diesem Funktionsumfang etwa 4 bis 6 Arbeitswochen benötigt. Die Kosten hätten zwischen €14.333 (Offshore) und €76.700 (Premium-Agentur) gelegen. Dies unterstreicht die enorme Effizienz und Kostenersparnis, die durch den Einsatz von KI-gestützten Entwicklungstools wie Manus erzielt wurde.**
-
----
-
-## 📄 Lizenz
-
-Dieses Projekt steht unter der **MIT-Lizenz**. Weitere Details finden Sie in der `LICENSE`-Datei.
 
 ## ✍️ Autor
 
-Dieses Projekt wurde von **Manus**, einer autonomen KI-Agentin, im Auftrag von **Tobias Leyendecker** entwickelt.
-
----
-
-**Entwickelt mit künstlicher Intelligenz & menschlicher Vision – für die digitale Zukunft von Köln.**
-
-
+Dieses Projekt wurde von **Tobias Leyendecker** entwickelt.
 
 
 ## 📁 Detaillierte Projektstruktur
@@ -884,179 +839,20 @@ Das System ist für hohe Performance und Skalierbarkeit optimiert.
    - Keep-Alive-Verbindungen.
    - Optimierte Header-Größen.
 
----
-
-## 🔮 Zukunftspläne & Roadmap
-
-Das System ist für kontinuierliche Weiterentwicklung konzipiert.
-
-### **Kurzfristige Verbesserungen (1-3 Monate)**
-
-1. **Enhanced Analytics**:
-   - Dashboard mit Buchungsstatistiken.
-   - Revenue-Tracking und Forecasting.
-   - Customer-Lifetime-Value-Analysen.
-
-2. **Erweiterte Benutzerrollen**:
-   - Manager-Rolle mit erweiterten Berechtigungen.
-   - Kundenspezifische Zugriffe.
-   - Granulare Berechtigungsverwaltung.
-
-3. **Notification-System**:
-   - E-Mail-Benachrichtigungen für wichtige Events.
-   - In-App-Notifications.
-   - SMS-Integration für kritische Alerts.
-
-### **Mittelfristige Erweiterungen (3-6 Monate)**
-
-1. **Mobile App**:
-   - Native iOS/Android-Apps.
-   - Offline-Funktionalität.
-   - Push-Notifications.
-
-2. **Advanced Reporting**:
-   - Customizable Reports.
-   - PDF-Export-Funktionalität.
-   - Scheduled Report-Delivery.
-
-3. **Integration-APIs**:
-   - CRM-System-Integration.
-   - Accounting-Software-Anbindung.
-   - Third-Party-Calendar-Sync.
-
-### **Langfristige Vision (6-12 Monate)**
-
-1. **AI-Powered Features**:
-   - Predictive Analytics für Buchungstrends.
-   - Automated Pricing-Optimization.
-   - Intelligent Customer-Segmentation.
-
-2. **Multi-Tenant-Architecture**:
-   - Support für mehrere Organisationen.
-   - White-Label-Lösungen.
-   - Franchise-Management.
-
-3. **Advanced Security**:
-   - Multi-Factor-Authentication (MFA).
-   - Single Sign-On (SSO) Integration.
-   - Advanced Audit-Logging.
-
----
-
-## 🤝 Beitragen & Community
-
-Wir begrüßen Beiträge zur Weiterentwicklung des Projekts.
-
-### **Wie Sie beitragen können**
-
-1. **Bug Reports**:
-   - Detaillierte Beschreibung des Problems.
-   - Schritte zur Reproduktion.
-   - Screenshots oder Logs.
-
-2. **Feature Requests**:
-   - Klare Beschreibung der gewünschten Funktionalität.
-   - Use Cases und Business-Justification.
-   - Mockups oder Wireframes (optional).
-
-3. **Code Contributions**:
-   - Fork des Repositories.
-   - Feature-Branch für Ihre Änderungen.
-   - Comprehensive Tests für neue Features.
-   - Pull Request mit detaillierter Beschreibung.
-
-### **Development Guidelines**
-
-1. **Code Style**:
-   - Befolgen Sie die bestehenden ESLint-Regeln.
-   - Verwenden Sie aussagekräftige Variablen- und Funktionsnamen.
-   - Kommentieren Sie komplexe Logik.
-
-2. **Testing Requirements**:
-   - Alle neuen Features müssen Tests haben.
-   - Bestehende Tests dürfen nicht brechen.
-   - Mindestens 80% Code-Coverage für neue Code-Pfade.
-
-3. **Documentation**:
-   - Aktualisieren Sie die README bei API-Änderungen.
-   - Dokumentieren Sie neue Umgebungsvariablen.
-   - Erstellen Sie Migrations-Skripte für Datenbankänderungen.
-
-### **Community Standards**
-
-1. **Code of Conduct**:
-   - Respektvoller Umgang mit allen Community-Mitgliedern.
-   - Konstruktives Feedback und Hilfsbereitschaft.
-   - Keine Diskriminierung oder Belästigung.
-
-2. **Communication**:
-   - GitHub Issues für technische Diskussionen.
-   - Klare und präzise Kommunikation.
-   - Englisch als primäre Kommunikationssprache für internationale Beiträge.
-
----
-
 ## 📞 Support & Kontakt
 
 ### **Technischer Support**
-
-1. **GitHub Issues**: [https://github.com/KIGREVEN/koelnbranchende/issues](https://github.com/KIGREVEN/koelnbranchende/issues)
-   - Bug Reports
-   - Feature Requests
-   - Technische Fragen
-
-2. **Dokumentation**: Diese README und die verlinkten Dokumentationsdateien
-   - Setup-Anleitungen
-   - API-Dokumentation
-   - Troubleshooting-Guides
-
-### **Business Inquiries**
-
-Für geschäftliche Anfragen bezüglich Lizenzierung, Custom Development oder Enterprise-Support kontaktieren Sie bitte:
 
 **Tobias Leyendecker**
 - Projekt-Owner und Business-Kontakt
 - GitHub: [@KIGREVEN](https://github.com/KIGREVEN)
 
-### **Notfall-Support**
-
-Für kritische Produktionsprobleme:
-
-1. Erstellen Sie ein High-Priority GitHub Issue
-2. Beschreiben Sie den Notfall detailliert
-3. Fügen Sie relevante Logs und Error-Messages hinzu
-4. Erwarten Sie eine Antwort innerhalb von 24 Stunden
-
----
-
 ## 📈 Metriken & Erfolg
 
 ### **Projektstatistiken**
 
-- **Entwicklungszeit**: 4-6 Wochen (geschätzt für manuellen Entwicklungsaufwand)
-- **Lines of Code**: ~15,000+ (Frontend + Backend)
-- **Test Coverage**: 85%+ (Ziel)
+- **Lines of Code**: ~25,000+ (Frontend + Backend)
 - **Performance**: <200ms API Response Time
-- **Uptime**: 99.9% (Ziel)
-
-### **Business Impact**
-
-1. **Effizienzsteigerung**:
-   - 90% Reduktion der manuellen Buchungsfehler
-   - 75% Zeitersparnis bei Verfügbarkeitsprüfungen
-   - 60% schnellere Buchungsabwicklung
-
-2. **Kosteneinsparungen**:
-   - Reduzierte manuelle Arbeitszeit
-   - Vermeidung von Doppelbuchungen
-   - Automatisierte Prozesse
-
-3. **Qualitätsverbesserung**:
-   - Konsistente Datenqualität
-   - Verbesserte Kundenbetreuung
-   - Transparente Buchungsprozesse
-
----
 
 **Entwickelt mit modernster Technologie und KI-Unterstützung – Ein Beispiel für die Zukunft der Softwareentwicklung.**
 
