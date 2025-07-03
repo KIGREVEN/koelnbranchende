@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import DatePicker from './DatePicker';
 
 const EditBookingModal = ({ booking, isOpen, onClose, onBookingUpdated }) => {
+  const { apiRequest } = useAuth();
   const [formData, setFormData] = useState({
     kundenname: '',
     kundennummer: '',
@@ -24,8 +26,7 @@ const EditBookingModal = ({ booking, isOpen, onClose, onBookingUpdated }) => {
     const fetchCategories = async () => {
       try {
         setCategoriesLoading(true);
-        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://koeln-branchen-api.onrender.com';
-        const response = await fetch(`${baseUrl}/api/categories`);
+        const response = await apiRequest('/api/categories');
         
         if (response.ok) {
           const data = await response.json();
@@ -50,17 +51,30 @@ const EditBookingModal = ({ booking, isOpen, onClose, onBookingUpdated }) => {
     if (isOpen) {
       fetchCategories();
     }
-  }, [isOpen]);
+  }, [isOpen, apiRequest]);
+
+  // Konvertiert ISO-Datum zu deutschem Format (dd.mm.yyyy)
+  const formatDateFromISO = (isoString) => {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}.${month}.${year}`;
+  };
 
   // Fülle Formular mit Buchungsdaten wenn Modal geöffnet wird
   useEffect(() => {
     if (booking && isOpen) {
+      // Prüfe auf Abo-Buchungen (31.12.2099)
+      const isAbo = booking.zeitraum_bis && new Date(booking.zeitraum_bis).getFullYear() === 2099;
+      
       setFormData({
         kundenname: booking.kundenname || '',
         kundennummer: booking.kundennummer || '',
         belegung: booking.belegung || '',
-        zeitraum_von: booking.zeitraum_von ? booking.zeitraum_von.split('T')[0] : '',
-        zeitraum_bis: booking.zeitraum_bis ? booking.zeitraum_bis.split('T')[0] : '',
+        zeitraum_von: formatDateFromISO(booking.zeitraum_von),
+        zeitraum_bis: isAbo ? '' : formatDateFromISO(booking.zeitraum_bis), // Abo-Buchungen: leer anzeigen
         platzierung: booking.platzierung?.toString() || '1',
         status: booking.status || 'reserviert',
         berater: booking.berater || '',
@@ -104,38 +118,54 @@ const EditBookingModal = ({ booking, isOpen, onClose, onBookingUpdated }) => {
       if (!formData.zeitraum_von) {
         throw new Error('Von-Datum ist erforderlich');
       }
-      if (!formData.zeitraum_bis) {
-        throw new Error('Bis-Datum ist erforderlich');
-      }
+      // Bis-Datum ist optional für Abo-Buchungen
       if (!formData.berater.trim()) {
         throw new Error('Berater ist erforderlich');
       }
 
-      // Datum-Formatierung
-      const formatDateForAPI = (dateStr) => {
-        const date = new Date(dateStr + 'T00:00:00.000Z');
-        return date.toISOString();
-      };
-
-      const formatEndDateForAPI = (dateStr) => {
-        const date = new Date(dateStr + 'T23:59:59.000Z');
-        return date.toISOString();
+      // Konvertiert deutsches Datumsformat (dd.mm.yyyy) zu ISO 8601
+      const convertDateToISO = (dateString, isEndDate = false) => {
+        if (!dateString || dateString.trim() === '') {
+          // Für Abo-Buchungen: Automatisch 31.12.2099 setzen wenn Enddatum leer
+          if (isEndDate) {
+            return '2099-12-31T23:59:59.000Z'; // Abo-Datum: 31.12.2099
+          }
+          return null; // Startdatum darf nicht leer sein
+        }
+        
+        // Parse deutsches Format: dd.mm.yyyy
+        const [day, month, year] = dateString.split('.');
+        
+        // Validiere Teile
+        if (!day || !month || !year) {
+          // Fallback für Abo-Buchungen
+          if (isEndDate) {
+            return '2099-12-31T23:59:59.000Z';
+          }
+          return null;
+        }
+        
+        // Erstelle ISO 8601 Format
+        // Startdatum: 00:00:00, Enddatum: 23:59:59 für ganztägige Abdeckung
+        const time = isEndDate ? '23:59:59.000Z' : '00:00:00.000Z';
+        const isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${time}`;
+        
+        return isoDate;
       };
 
       const bookingData = {
         kundenname: formData.kundenname.trim(),
         kundennummer: formData.kundennummer.trim(),
         belegung: formData.belegung.trim(),
-        zeitraum_von: formatDateForAPI(formData.zeitraum_von),
-        zeitraum_bis: formatEndDateForAPI(formData.zeitraum_bis),
+        zeitraum_von: convertDateToISO(formData.zeitraum_von, false),
+        zeitraum_bis: convertDateToISO(formData.zeitraum_bis, true), // Automatisch 31.12.2099 für Abo-Buchungen
         platzierung: parseInt(formData.platzierung),
         status: formData.status,
         berater: formData.berater.trim(),
         verkaufspreis: formData.verkaufspreis ? parseFloat(formData.verkaufspreis) : null
       };
 
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://koeln-branchen-api.onrender.com';
-      const response = await fetch(`${baseUrl}/api/bookings/${booking.id}`, {
+      const response = await apiRequest(`/api/bookings/${booking.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -283,14 +313,17 @@ const EditBookingModal = ({ booking, isOpen, onClose, onBookingUpdated }) => {
 
               <div>
                 <label className="block text-sm font-medium mb-1 flex items-center gap-2">
-                  📅 Bis Datum *
+                  📅 Bis Datum <span className="text-gray-500 text-xs">(optional für Abo-Buchungen)</span>
                 </label>
                 <DatePicker
                   value={formData.zeitraum_bis}
                   onChange={(date) => handleDateChange('zeitraum_bis', date)}
-                  placeholder="tt.mm.jjjj"
-                  required
+                  placeholder="tt.mm.jjjj (leer = unbefristetes Abo)"
+                  required={false}
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  💡 Leer lassen für unbefristete Abo-Buchungen (wird automatisch auf 31.12.2099 gesetzt)
+                </p>
               </div>
             </div>
 
