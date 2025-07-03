@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import DatePicker from './DatePicker';
 
 const BookingForm = ({ onBookingCreated }) => {
+  const { user, apiRequest } = useAuth();
   const [formData, setFormData] = useState({
     kundenname: '',
     kundennummer: '',
@@ -24,8 +26,7 @@ const BookingForm = ({ onBookingCreated }) => {
     const fetchCategories = async () => {
       try {
         setCategoriesLoading(true);
-        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://koeln-branchen-api.onrender.com';
-        const response = await fetch(`${baseUrl}/api/categories`);
+        const response = await apiRequest('/api/categories');
         
         if (response.ok) {
           const data = await response.json();
@@ -48,7 +49,7 @@ const BookingForm = ({ onBookingCreated }) => {
     };
 
     fetchCategories();
-  }, []);
+  }, [apiRequest]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -129,9 +130,8 @@ const BookingForm = ({ onBookingCreated }) => {
 
       console.log('Sending data to backend:', apiData);
 
-      // API-URL mit Fallback
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://koeln-branchen-api.onrender.com';
-      const response = await fetch(`${baseUrl}/api/bookings`, {
+      // Verwende apiRequest für authentifizierten API-Aufruf
+      const response = await apiRequest('/api/bookings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
