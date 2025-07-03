@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom'
 import { Plus, Search, List, Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
@@ -19,15 +19,16 @@ function Navigation() {
 
   // Rollenbasierte Navigation
   const getNavItems = () => {
-    const baseItems = [
-      { path: '/', label: 'Übersicht', icon: List, permission: 'read' },
-      { path: '/availability', label: 'Verfügbarkeit', icon: Search, permission: 'availability' },
-    ]
+    const baseItems = []
 
-    // Nur Admins können neue Buchungen erstellen
+    // Nur Admins können Übersicht und neue Buchungen sehen
     if (isAdmin()) {
-      baseItems.splice(1, 0, { path: '/booking', label: 'Neue Buchung', icon: Plus, permission: 'create' })
+      baseItems.push({ path: '/', label: 'Übersicht', icon: List, permission: 'read' })
+      baseItems.push({ path: '/booking', label: 'Neue Buchung', icon: Plus, permission: 'create' })
     }
+
+    // Alle authentifizierten Benutzer können Verfügbarkeit prüfen
+    baseItems.push({ path: '/availability', label: 'Verfügbarkeit', icon: Search, permission: 'availability' })
 
     return baseItems.filter(item => hasPermission(item.permission))
   }
@@ -246,7 +247,14 @@ function App() {
             <Navigation />
             <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
               <Routes>
-                <Route path="/" element={<BookingOverview />} />
+                <Route 
+                  path="/" 
+                  element={
+                    <ProtectedRoute requireAdmin={true}>
+                      <BookingOverview />
+                    </ProtectedRoute>
+                  } 
+                />
                 <Route 
                   path="/booking" 
                   element={
@@ -257,6 +265,8 @@ function App() {
                 />
                 <Route path="/availability" element={<AvailabilityChecker />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                {/* Redirect für Viewer zur Verfügbarkeit */}
+                <Route path="*" element={<Navigate to="/availability" replace />} />
               </Routes>
             </main>
           </ProtectedRoute>
