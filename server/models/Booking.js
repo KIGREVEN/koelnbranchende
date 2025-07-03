@@ -22,7 +22,7 @@ const bookingSchema = Joi.object({
     'date.base': 'Zeitraum von muss ein gültiges Datum sein',
     'any.required': 'Zeitraum von ist erforderlich'
   }),
-  zeitraum_bis: Joi.date().iso().min(Joi.ref('zeitraum_von')).optional().messages({
+  zeitraum_bis: Joi.date().iso().min(Joi.ref('zeitraum_von')).allow(null).optional().messages({
     'date.base': 'Zeitraum bis muss ein gültiges Datum sein',
     'date.min': 'Zeitraum bis muss nach dem Startdatum liegen'
   }),
