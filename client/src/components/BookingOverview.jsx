@@ -360,13 +360,21 @@ const BookingOverview = () => {
             />
           </div>
 
-          {/* Aktualisieren Button */}
+          {/* Filter zurücksetzen Button */}
           <div className="flex items-end">
             <button
-              onClick={fetchBookings}
-              className="w-full p-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center justify-center gap-2"
+              onClick={() => setFilters({
+                search: '',
+                belegung: '',
+                berater: '',
+                status: '',
+                platzierung: '',
+                startDate: '',
+                endDate: ''
+              })}
+              className="w-full p-3 bg-gray-500 text-white rounded-md hover:bg-gray-600 flex items-center justify-center gap-2"
             >
-              🔄 Aktualisieren
+              🗑️ Filter zurücksetzen
             </button>
           </div>
         </div>
