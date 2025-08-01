@@ -12,6 +12,17 @@ import AvailabilityChecker from './components/AvailabilityChecker'
 import { useAuth } from './context/AuthContext'
 import './App.css'
 
+// Rollenbasierte Weiterleitung
+function RoleBasedRedirect() {
+  const { isAdmin } = useAuth()
+  
+  if (isAdmin()) {
+    return <Navigate to="/overview" replace />
+  } else {
+    return <Navigate to="/availability" replace />
+  }
+}
+
 function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const location = useLocation()
@@ -23,7 +34,7 @@ function Navigation() {
 
     // Nur Admins können Übersicht und neue Buchungen sehen
     if (isAdmin()) {
-      baseItems.push({ path: '/', label: 'Übersicht', icon: List, permission: 'read' })
+      baseItems.push({ path: '/overview', label: 'Übersicht', icon: List, permission: 'read' })
       baseItems.push({ path: '/booking', label: 'Neue Buchung', icon: Plus, permission: 'create' })
     }
 
@@ -250,6 +261,14 @@ function App() {
                 <Route 
                   path="/" 
                   element={
+                    <ProtectedRoute requireAdmin={false}>
+                      <RoleBasedRedirect />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/overview" 
+                  element={
                     <ProtectedRoute requireAdmin={true}>
                       <BookingOverview />
                     </ProtectedRoute>
@@ -265,8 +284,8 @@ function App() {
                 />
                 <Route path="/availability" element={<AvailabilityChecker />} />
                 <Route path="/dashboard" element={<Dashboard />} />
-                {/* Redirect für Viewer zur Verfügbarkeit */}
-                <Route path="*" element={<Navigate to="/availability" replace />} />
+                {/* Redirect für unbekannte Routen */}
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>
           </ProtectedRoute>
