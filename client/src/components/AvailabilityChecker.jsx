@@ -42,10 +42,42 @@ const AvailabilityChecker = () => {
 
   // Handler für DatePicker-Komponenten
   const handleDateChange = (name) => (value) => {
-    setCheckData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setCheckData(prev => {
+      const newData = {
+        ...prev,
+        [name]: value
+      };
+      
+      // Automatische Berechnung des Enddatums wenn Startdatum geändert wird
+      if (name === 'zeitraum_von' && value && isValidDateFormat(value)) {
+        const endDate = calculateEndDate(value);
+        newData.zeitraum_bis = endDate;
+      }
+      
+      return newData;
+    });
+  };
+
+  // Berechne Enddatum (12 Monate später)
+  const calculateEndDate = (startDateString) => {
+    try {
+      const [day, month, year] = startDateString.split('.').map(Number);
+      const startDate = new Date(year, month - 1, day); // month ist 0-basiert
+      
+      // Füge 12 Monate hinzu
+      const endDate = new Date(startDate);
+      endDate.setFullYear(endDate.getFullYear() + 1);
+      
+      // Formatiere zurück zu deutschem Format
+      const endDay = endDate.getDate().toString().padStart(2, '0');
+      const endMonth = (endDate.getMonth() + 1).toString().padStart(2, '0');
+      const endYear = endDate.getFullYear();
+      
+      return `${endDay}.${endMonth}.${endYear}`;
+    } catch (error) {
+      console.error('Fehler bei Enddatum-Berechnung:', error);
+      return '';
+    }
   };
 
   const handleInputChange = (e) => {
@@ -228,7 +260,7 @@ const AvailabilityChecker = () => {
                 name="zeitraum_bis"
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">Format: tt.mm.jjjj</p>
+              <p className="text-xs text-gray-500 mt-1">Format: tt.mm.jjjj (wird automatisch auf +12 Monate gesetzt)</p>
             </div>
           </div>
 
