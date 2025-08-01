@@ -359,24 +359,6 @@ const BookingOverview = () => {
               name="endDate"
             />
           </div>
-
-          {/* Filter zurücksetzen Button */}
-          <div className="flex items-end">
-            <button
-              onClick={() => setFilters({
-                search: '',
-                belegung: '',
-                berater: '',
-                status: '',
-                platzierung: '',
-                startDate: '',
-                endDate: ''
-              })}
-              className="w-full p-3 bg-gray-500 text-white rounded-md hover:bg-gray-600 flex items-center justify-center gap-2"
-            >
-              🗑️ Filter zurücksetzen
-            </button>
-          </div>
         </div>
       </div>
 
