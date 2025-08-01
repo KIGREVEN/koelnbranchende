@@ -6,23 +6,14 @@ const { authenticateToken } = require('../middleware/auth');
 // GET /api/availability/check - Check availability for specific criteria (Auth required)
 router.get('/check', authenticateToken, async (req, res, next) => {
   try {
-    const { belegung, platzierung, zeitraum_von, zeitraum_bis } = req.query;
+    const { belegung, zeitraum_von, zeitraum_bis } = req.query;
     
     // Validate required parameters
-    if (!belegung || !platzierung || !zeitraum_von || !zeitraum_bis) {
+    if (!belegung || !zeitraum_von || !zeitraum_bis) {
       return res.status(400).json({
         success: false,
         error: 'Missing required parameters',
-        required: ['belegung', 'platzierung', 'zeitraum_von', 'zeitraum_bis']
-      });
-    }
-
-    // Validate platzierung is a number between 1-6
-    const platzierungNum = parseInt(platzierung);
-    if (isNaN(platzierungNum) || platzierungNum < 1 || platzierungNum > 6) {
-      return res.status(400).json({
-        success: false,
-        error: 'Platzierung must be a number between 1 and 6'
+        required: ['belegung', 'zeitraum_von', 'zeitraum_bis']
       });
     }
 
@@ -44,21 +35,28 @@ router.get('/check', authenticateToken, async (req, res, next) => {
       });
     }
 
-    const availability = await Booking.getAvailability(
+    // Prüfe verfügbare Plätze (max. 6 pro Belegung/Zeitraum)
+    const availablePlaces = await Booking.getAvailablePlacesCount(
       belegung,
-      platzierungNum,
       zeitraum_von,
       zeitraum_bis
     );
+
+    const occupiedPlaces = 6 - availablePlaces;
 
     res.json({
       success: true,
       data: {
         belegung,
-        platzierung: platzierungNum,
         zeitraum_von,
         zeitraum_bis,
-        ...availability
+        total_places: 6,
+        available_places: availablePlaces,
+        occupied_places: occupiedPlaces,
+        is_available: availablePlaces > 0,
+        message: availablePlaces > 0 
+          ? `${availablePlaces} von 6 Plätzen verfügbar`
+          : 'Alle 6 Plätze belegt - keine Verfügbarkeit'
       }
     });
   } catch (error) {

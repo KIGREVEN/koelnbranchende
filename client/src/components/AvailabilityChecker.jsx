@@ -48,34 +48,48 @@ const AvailabilityChecker = () => {
     }));
   };
 
-  // Handler für andere Eingaben
   const handleInputChange = (e) => {
+    const { name, value } = e.target;
     setCheckData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [name]: value
     }));
   };
 
-  // Validiert Datumsformat tt.mm.jjjj
+  // Validierung für deutsches Datumsformat
   const isValidDateFormat = (dateString) => {
-    const dateRegex = /^\d{1,2}\.\d{1,2}\.\d{4}$/;
-    if (!dateRegex.test(dateString)) return false;
-    
-    const [day, month, year] = dateString.split('.').map(Number);
-    const date = new Date(year, month - 1, day);
-    
-    return date.getFullYear() === year &&
-           date.getMonth() === month - 1 &&
-           date.getDate() === day;
+    const regex = /^\d{2}\.\d{2}\.\d{4}$/;
+    return regex.test(dateString);
   };
 
-  // Konvertiert Datum von tt.mm.jjjj zu ISO Format
+  // Konvertiert deutsches Datumsformat (dd.mm.yyyy) zu ISO 8601
   const convertDateToISO = (dateString, isEndDate = false) => {
-    if (!dateString) return '';
+    if (!dateString || dateString.trim() === '') {
+      // Für Abo-Buchungen: Automatisch 31.12.2099 setzen wenn Enddatum leer
+      if (isEndDate) {
+        return '2099-12-31T23:59:59.000Z'; // Abo-Datum: 31.12.2099
+      }
+      return null; // Startdatum darf nicht leer sein
+    }
     
+    // Parse deutsches Format: dd.mm.yyyy
     const [day, month, year] = dateString.split('.');
-    const time = isEndDate ? '23:59:59' : '00:00:00';
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${time}.000Z`;
+    
+    // Validiere Teile
+    if (!day || !month || !year) {
+      // Fallback für Abo-Buchungen
+      if (isEndDate) {
+        return '2099-12-31T23:59:59.000Z';
+      }
+      return null;
+    }
+    
+    // Erstelle ISO 8601 Format
+    // Startdatum: 00:00:00, Enddatum: 23:59:59 für ganztägige Abdeckung
+    const time = isEndDate ? '23:59:59.000Z' : '00:00:00.000Z';
+    const isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${time}`;
+    
+    return isoDate;
   };
 
   // Format date from ISO to dd.mm.yyyy
@@ -138,127 +152,56 @@ const AvailabilityChecker = () => {
     setResults(null);
 
     try {
-      // Konvertiere Daten für API - prüfe ALLE Platzierungen
+      // Konvertiere Daten für API - neue anonyme Platzierungslogik
       const apiData = {
         zeitraum_von: convertDateToISO(checkData.zeitraum_von, false),
         zeitraum_bis: convertDateToISO(checkData.zeitraum_bis, true),
-        belegung: checkData.belegung,
-        check_all_placements: true // Neue Flag für alle Platzierungen
+        belegung: checkData.belegung
       };
 
-      console.log('Prüfe alle Platzierungen für Zeitraum:', apiData);
+      console.log('Prüfe Verfügbarkeit für Zeitraum:', apiData);
 
-      const response = await apiRequest('/api/availability/all', {
-        method: 'POST',
+      const response = await apiRequest(`/api/availability/check?${new URLSearchParams(apiData)}`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(apiData),
+        }
       });
 
       const data = await response.json();
 
-      if (response.ok) {
-        // Neue Datenstruktur für alle Platzierungen - API gibt data.data zurück
-        const responseData = data.data || data; // Fallback für verschiedene API-Strukturen
-        const validatedData = {
-          available_placements: Array.isArray(responseData.available_placements) ? responseData.available_placements : [],
-          occupied_placements: Array.isArray(responseData.occupied_placements) ? responseData.occupied_placements : [],
-          message: data.message || responseData.message || ''
-        };
+      if (response.ok && data.success) {
+        setResults(data.data);
         
-        setResults(validatedData);
-        
-        const availableCount = validatedData.available_placements.length;
-        const occupiedCount = validatedData.occupied_placements.length;
+        const { available_places, occupied_places, message } = data.data;
         
         setMessage({ 
           type: 'success', 
-          text: `Prüfung abgeschlossen: ${availableCount} freie, ${occupiedCount} belegte Platzierungen gefunden.`
+          text: `Prüfung abgeschlossen: ${message}`
         });
         
-        console.log('Verfügbarkeitsprüfung für alle Platzierungen erfolgreich:', validatedData);
-        console.log('API Response Structure:', data);
+        console.log('Verfügbarkeitsprüfung erfolgreich:', data.data);
       } else {
         setMessage({ type: 'error', text: data.message || 'Fehler bei der Verfügbarkeitsprüfung' });
       }
     } catch (error) {
-      console.error('Netzwerkfehler bei Verfügbarkeitsprüfung:', error);
-      setMessage({ type: 'error', text: 'Netzwerkfehler. Bitte versuchen Sie es erneut.' });
+      console.error('Fehler bei der Verfügbarkeitsprüfung:', error);
+      setMessage({ type: 'error', text: 'Netzwerkfehler bei der Verfügbarkeitsprüfung' });
     } finally {
       setLoading(false);
     }
   };
 
-  // Schnellauswahl für häufige Zeiträume
-  const setQuickDateRange = (days) => {
-    const today = new Date();
-    const endDate = new Date(today);
-    endDate.setDate(today.getDate() + days);
-
-    const formatDate = (date) => {
-      const day = date.getDate().toString().padStart(2, '0');
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      const year = date.getFullYear();
-      return `${day}.${month}.${year}`;
-    };
-
-    setCheckData(prev => ({
-      ...prev,
-      zeitraum_von: formatDate(today),
-      zeitraum_bis: formatDate(endDate)
-    }));
-  };
-
   return (
-    <div className="w-full max-w-4xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
-        🔍 Verfügbarkeitsprüfung
-      </h1>
-      <p className="text-gray-600 mb-6">
-        Prüfen Sie die Verfügbarkeit aller Platzierungen für einen bestimmten Zeitraum und eine Belegung
-      </p>
-
-      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      {/* Formular */}
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <h1 className="text-2xl font-bold mb-6 text-gray-800">
+          🔍 Verfügbarkeitsprüfung
+        </h1>
+        
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Schnellauswahl */}
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              ⚡ Schnellauswahl
-            </label>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setQuickDateRange(7)}
-                className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
-              >
-                Nächste 7 Tage
-              </button>
-              <button
-                type="button"
-                onClick={() => setQuickDateRange(30)}
-                className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
-              >
-                Nächste 30 Tage
-              </button>
-              <button
-                type="button"
-                onClick={() => setQuickDateRange(90)}
-                className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
-              >
-                Nächste 90 Tage
-              </button>
-              <button
-                type="button"
-                onClick={() => setQuickDateRange(365)}
-                className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
-              >
-                Nächstes Jahr
-              </button>
-            </div>
-          </div>
-
-          {/* Datumsfelder */}
+          {/* Zeitraum */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1 flex items-center gap-2">
@@ -335,126 +278,64 @@ const AvailabilityChecker = () => {
       {/* Ergebnisse */}
       {results && (
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold mb-4">
-            📊 Verfügbarkeitsergebnisse
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            📊 Verfügbarkeitsergebnisse für {results.belegung}
           </h2>
           
           <div className="mb-6">
             <p className="text-gray-700 mb-2">
-              <strong>Zeitraum:</strong> {checkData.zeitraum_von} bis {checkData.zeitraum_bis}
+              <strong>Zeitraum:</strong> {formatDateFromISO(results.zeitraum_von)} bis {formatDateFromISO(results.zeitraum_bis)}
             </p>
             <p className="text-gray-700">
-              <strong>Belegung:</strong> {checkData.belegung}
+              <strong>Belegung:</strong> {results.belegung}
             </p>
           </div>
 
-          {/* Freie Platzierungen */}
-          {results.available_placements && results.available_placements.length > 0 && (
-            <div className="mb-6">
-              <h3 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
-                ✅ Freie Platzierungen ({results.available_placements.length})
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {results.available_placements.map((placement, index) => (
-                  <div key={index} className="bg-green-50 border border-green-200 p-4 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium text-green-800">
-                          Position {placement.platzierung}
-                        </h4>
-                        <p className="text-sm text-green-700">
-                          {placement.name || `Platzierung ${placement.platzierung}`}
-                        </p>
-                      </div>
-                      <span className="text-2xl">✅</span>
-                    </div>
-                    <div className="mt-2">
-                      <span className="inline-block px-2 py-1 text-xs bg-green-200 text-green-800 rounded">
-                        Verfügbar
-                      </span>
-                    </div>
-                  </div>
-                ))}
+          {/* Verfügbarkeitsübersicht */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="text-center bg-green-50 p-4 rounded-lg border border-green-200">
+              <div className="text-3xl font-bold text-green-600 mb-2">
+                {results.available_places}
               </div>
+              <div className="text-sm text-green-700 font-medium">Verfügbare Plätze</div>
             </div>
-          )}
+            
+            <div className="text-center bg-red-50 p-4 rounded-lg border border-red-200">
+              <div className="text-3xl font-bold text-red-600 mb-2">
+                {results.occupied_places}
+              </div>
+              <div className="text-sm text-red-700 font-medium">Belegte Plätze</div>
+            </div>
+            
+            <div className="text-center bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <div className="text-3xl font-bold text-blue-600 mb-2">
+                {results.total_places}
+              </div>
+              <div className="text-sm text-blue-700 font-medium">Gesamt Plätze</div>
+            </div>
+          </div>
 
-          {/* Belegte Platzierungen */}
-          {results.occupied_placements && results.occupied_placements.length > 0 && (
-            <div className="mb-6">
-              <h3 className="font-semibold text-red-800 mb-3 flex items-center gap-2">
-                ❌ Belegte Platzierungen ({results.occupied_placements.length})
-              </h3>
-              <div className="space-y-3">
-                {results.occupied_placements.map((placement, index) => (
-                  <div key={index} className="bg-red-50 border border-red-200 p-4 rounded-lg">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-red-800 mb-1">
-                          Position {placement.platzierung}
-                        </h4>
-                        <p className="text-sm text-red-700 mb-2">
-                          <strong>Kunde:</strong> {placement.kundenname} ({placement.kundennummer})
-                        </p>
-                        <p className="text-sm text-red-700 mb-2">
-                          <strong>Belegung:</strong> {placement.belegung}
-                        </p>
-                        <p className="text-sm text-red-600 mb-2">
-                          <strong>Belegt vom:</strong> {formatDateFromISO(placement.zeitraum_von)} bis {formatDateFromISO(placement.zeitraum_bis)}
-                        </p>
-                        {placement.free_from && (
-                          <p className="text-sm text-green-700 font-medium">
-                            🗓️ <strong>Wieder frei ab:</strong> {formatDateFromISO(placement.free_from)}
-                          </p>
-                        )}
-                      </div>
-                      <div className="ml-4">
-                        <span className={`inline-block px-2 py-1 text-xs rounded ${
-                          placement.status === 'gebucht' ? 'bg-red-200 text-red-800' :
-                          placement.status === 'reserviert' ? 'bg-yellow-200 text-yellow-800' :
-                          'bg-gray-200 text-gray-800'
-                        }`}>
-                          {placement.status}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+          {/* Fortschrittsbalken */}
+          <div className="mb-6">
+            <div className="flex justify-between text-sm text-gray-600 mb-2">
+              <span>Belegung</span>
+              <span>{results.occupied_places} von {results.total_places} Plätzen</span>
             </div>
-          )}
+            <div className="w-full bg-gray-200 rounded-full h-4">
+              <div 
+                className="bg-red-500 h-4 rounded-full transition-all duration-300"
+                style={{width: `${(results.occupied_places / results.total_places) * 100}%`}}
+              ></div>
+            </div>
+          </div>
 
-          {/* Keine Ergebnisse */}
-          {(!results.available_placements || results.available_placements.length === 0) && 
-           (!results.occupied_placements || results.occupied_placements.length === 0) && (
-            <div className="text-center py-8">
-              <span className="text-4xl mb-4 block">🤷‍♂️</span>
-              <h3 className="font-semibold text-gray-800 mb-2">
-                Keine Ergebnisse gefunden
-              </h3>
-              <p className="text-gray-600">
-                Für den angegebenen Zeitraum und die Belegung wurden keine Platzierungen gefunden.
-              </p>
-            </div>
-          )}
-
-          {/* Zusammenfassung */}
-          <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-            <h3 className="font-semibold text-gray-800 mb-2">
-              📈 Zusammenfassung
-            </h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-green-700 font-medium">
-                  ✅ Freie Platzierungen: {results.available_placements ? results.available_placements.length : 0}
-                </span>
-              </div>
-              <div>
-                <span className="text-red-700 font-medium">
-                  ❌ Belegte Platzierungen: {results.occupied_placements ? results.occupied_placements.length : 0}
-                </span>
-              </div>
-            </div>
+          {/* Status-Nachricht */}
+          <div className={`p-4 rounded-lg text-center font-medium ${
+            results.is_available 
+              ? 'bg-green-100 text-green-800 border border-green-200' 
+              : 'bg-red-100 text-red-800 border border-red-200'
+          }`}>
+            {results.is_available ? '✅' : '❌'} {results.message}
           </div>
         </div>
       )}

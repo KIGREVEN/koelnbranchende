@@ -26,13 +26,7 @@ const bookingSchema = Joi.object({
     'date.base': 'Zeitraum bis muss ein gültiges Datum sein',
     'date.min': 'Zeitraum bis muss nach dem Startdatum liegen'
   }),
-  platzierung: Joi.number().integer().min(1).max(6).required().messages({
-    'number.base': 'Platzierung muss eine Zahl sein',
-    'number.integer': 'Platzierung muss eine ganze Zahl sein',
-    'number.min': 'Platzierung muss zwischen 1 und 6 liegen',
-    'number.max': 'Platzierung muss zwischen 1 und 6 liegen',
-    'any.required': 'Platzierung ist erforderlich'
-  }),
+  // platzierung wird automatisch vom System vergeben
   status: Joi.string().valid('vorreserviert', 'reserviert', 'gebucht').default('reserviert').messages({
     'any.only': 'Status muss vorreserviert, reserviert oder gebucht sein'
   }),
@@ -61,6 +55,64 @@ class Booking {
       throw validationError;
     }
     return value;
+  }
+
+  // Get available places count for a specific belegung and time range
+  static async getAvailablePlacesCount(belegung, zeitraum_von, zeitraum_bis) {
+    let queryText = `
+      SELECT COUNT(*) as occupied_count
+      FROM bookings 
+      WHERE belegung = $1 
+        AND status IN ('reserviert', 'gebucht')
+    `;
+    
+    const params = [belegung, zeitraum_von];
+    let paramCount = 2;
+    
+    if (zeitraum_bis === null || (zeitraum_bis && new Date(zeitraum_bis).getFullYear() === 2099)) {
+      // Für offene Abos: Prüfe auf Konflikte ab dem Startdatum
+      queryText += `
+        AND (
+          -- Bestehende offene Abos (zeitraum_bis ist NULL oder 2099)
+          zeitraum_bis IS NULL OR
+          EXTRACT(YEAR FROM zeitraum_bis) = 2099 OR
+          -- Bestehende Buchungen, die nach dem neuen Startdatum enden
+          zeitraum_bis > $2
+        )
+      `;
+    } else {
+      // Für normale Buchungen mit Enddatum
+      paramCount++;
+      queryText += `
+        AND (
+          -- Offene Abos (zeitraum_bis ist NULL oder 2099) blockieren alles ab zeitraum_von
+          ((zeitraum_bis IS NULL OR EXTRACT(YEAR FROM zeitraum_bis) = 2099) AND zeitraum_von <= $3) OR
+          -- Normale Buchungen mit Enddatum
+          (zeitraum_bis IS NOT NULL AND EXTRACT(YEAR FROM zeitraum_bis) != 2099 AND (
+            (zeitraum_von <= $2 AND zeitraum_bis > $2) OR
+            (zeitraum_von < $3 AND zeitraum_bis >= $3) OR
+            (zeitraum_von >= $2 AND zeitraum_bis <= $3)
+          ))
+        )
+      `;
+      params.push(zeitraum_bis);
+    }
+    
+    const result = await query(queryText, params);
+    const occupiedCount = parseInt(result.rows[0].occupied_count);
+    return 6 - occupiedCount; // Verfügbare Plätze von maximal 6
+  }
+
+  // Get next available placement number (internal use)
+  static async getNextAvailablePlacement(belegung, zeitraum_von, zeitraum_bis) {
+    const availablePlaces = await this.getAvailablePlacesCount(belegung, zeitraum_von, zeitraum_bis);
+    
+    if (availablePlaces <= 0) {
+      throw new Error('Keine Plätze verfügbar - alle 6 Plätze sind belegt');
+    }
+    
+    // Vergebe nächste verfügbare interne Nummer (1-6)
+    return 7 - availablePlaces;
   }
 
   // Check for booking conflicts
@@ -127,20 +179,12 @@ class Booking {
       throw error;
     }
     
-    // Check for conflicts (handle optional zeitraum_bis for subscriptions)
-    const conflicts = await this.checkConflict(
+    // Automatische Platzierungsvergabe
+    const platzierung = await this.getNextAvailablePlacement(
       validatedData.belegung,
-      validatedData.platzierung,
       validatedData.zeitraum_von,
       validatedData.zeitraum_bis || null
     );
-
-    if (conflicts.length > 0) {
-      const error = new Error('Booking conflict detected');
-      error.name = 'ConflictError';
-      error.conflicts = conflicts;
-      throw error;
-    }
 
     const queryText = `
       INSERT INTO bookings (
@@ -156,7 +200,7 @@ class Booking {
       validatedData.belegung,
       validatedData.zeitraum_von,
       validatedData.zeitraum_bis || null, // NULL für offene Abos
-      validatedData.platzierung,
+      platzierung, // Automatisch vergeben
       validatedData.status,
       validatedData.berater,
       validatedData.verkaufspreis || null

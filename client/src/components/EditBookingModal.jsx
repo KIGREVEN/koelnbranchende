@@ -10,7 +10,6 @@ const EditBookingModal = ({ booking, isOpen, onClose, onBookingUpdated }) => {
     belegung: '',
     zeitraum_von: '',
     zeitraum_bis: '',
-    platzierung: '1',
     status: 'reserviert',
     berater: '',
     verkaufspreis: ''
@@ -75,7 +74,6 @@ const EditBookingModal = ({ booking, isOpen, onClose, onBookingUpdated }) => {
         belegung: booking.belegung || '',
         zeitraum_von: formatDateFromISO(booking.zeitraum_von),
         zeitraum_bis: isAbo ? '' : formatDateFromISO(booking.zeitraum_bis), // Abo-Buchungen: leer anzeigen
-        platzierung: booking.platzierung?.toString() || '1',
         status: booking.status || 'reserviert',
         berater: booking.berater || '',
         verkaufspreis: booking.verkaufspreis || ''
@@ -159,10 +157,10 @@ const EditBookingModal = ({ booking, isOpen, onClose, onBookingUpdated }) => {
         belegung: formData.belegung.trim(),
         zeitraum_von: convertDateToISO(formData.zeitraum_von, false),
         zeitraum_bis: convertDateToISO(formData.zeitraum_bis, true), // Automatisch 31.12.2099 für Abo-Buchungen
-        platzierung: parseInt(formData.platzierung),
         status: formData.status,
         berater: formData.berater.trim(),
         verkaufspreis: formData.verkaufspreis ? parseFloat(formData.verkaufspreis) : null
+        // platzierung wird nicht mehr geändert - bleibt automatisch verwaltet
       };
 
       const response = await apiRequest(`/api/bookings/${booking.id}`, {
@@ -327,27 +325,13 @@ const EditBookingModal = ({ booking, isOpen, onClose, onBookingUpdated }) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1 flex items-center gap-2">
-                  📍 Platzierung *
-                </label>
-                <select
-                  name="platzierung"
-                  value={formData.platzierung}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  required
-                >
-                  <option value="1">Position 1</option>
-                  <option value="2">Position 2</option>
-                  <option value="3">Position 3</option>
-                  <option value="4">Position 4</option>
-                  <option value="5">Position 5</option>
-                  <option value="6">Position 6</option>
-                </select>
-              </div>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-gray-600">
+                ℹ️ Die Platzierung wird automatisch vom System verwaltet und kann nicht geändert werden.
+              </p>
+            </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-1 flex items-center gap-2">
                   📊 Status *

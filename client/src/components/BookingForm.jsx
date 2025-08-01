@@ -10,7 +10,6 @@ const BookingForm = ({ onBookingCreated }) => {
     belegung: '',
     zeitraum_von: '',
     zeitraum_bis: '',
-    platzierung: '1',
     status: 'reserviert',
     berater: '',
     verkaufspreis: ''
@@ -139,8 +138,8 @@ const BookingForm = ({ onBookingCreated }) => {
       const apiData = {
         ...formData,
         zeitraum_von: convertDateToISO(formData.zeitraum_von, false),
-        zeitraum_bis: convertDateToISO(formData.zeitraum_bis, true), // Automatisch 31.12.2099 für Abo-Buchungen
-        platzierung: parseInt(formData.platzierung) // Stelle sicher, dass es eine Zahl ist
+        zeitraum_bis: convertDateToISO(formData.zeitraum_bis, true) // Automatisch 31.12.2099 für Abo-Buchungen
+        // platzierung wird automatisch vom Backend vergeben
       };
 
       console.log('Sending data to backend:', apiData);
@@ -169,7 +168,6 @@ const BookingForm = ({ onBookingCreated }) => {
           belegung: '',
           zeitraum_von: '',
           zeitraum_bis: '',
-          platzierung: '1',
           status: 'reserviert',
           berater: ''
         });
@@ -308,27 +306,19 @@ const BookingForm = ({ onBookingCreated }) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1 flex items-center gap-2">
-              📍 Platzierung *
-            </label>
-            <select
-              name="platzierung"
-              value={formData.platzierung}
-              onChange={handleInputChange}
-              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              required
-            >
-              <option value="1">Position 1 (Premium)</option>
-              <option value="2">Position 2</option>
-              <option value="3">Position 3</option>
-              <option value="4">Position 4</option>
-              <option value="5">Position 5</option>
-              <option value="6">Position 6</option>
-            </select>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-blue-600">🎯</span>
+            <p className="text-sm text-blue-700 font-medium">
+              Automatische Platzvergabe
+            </p>
           </div>
+          <p className="text-xs text-blue-600 mt-1">
+            Das System vergibt automatisch einen verfügbaren Platz (max. 6 pro Belegung/Zeitraum)
+          </p>
+        </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1 flex items-center gap-2">
               📊 Status
