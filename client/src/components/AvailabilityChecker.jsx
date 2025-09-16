@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import DatePicker from './DatePicker';
 
@@ -15,6 +15,8 @@ const AvailabilityChecker = () => {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [filteredCategories, setFilteredCategories] = useState([]);
 
   // Load categories from API
   useEffect(() => {
@@ -90,6 +92,54 @@ const AvailabilityChecker = () => {
     }));
   };
 
+  // Handler for searchable dropdown
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setCheckData(prev => ({
+      ...prev,
+      belegung: value
+    }));
+    
+    // Filter categories based on search input
+    if (value.trim() === '') {
+      setFilteredCategories(categories);
+    } else {
+      const filtered = categories.filter(cat => 
+        cat.name.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredCategories(filtered);
+    }
+    setShowDropdown(true);
+  };
+
+  // Handler for category selection
+  const handleCategorySelect = (categoryName) => {
+    setCheckData(prev => ({
+      ...prev,
+      belegung: categoryName
+    }));
+    setShowDropdown(false);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.relative')) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Initialize filtered categories when categories load
+  useEffect(() => {
+    setFilteredCategories(categories);
+  }, [categories]);
+
   // Validation for German date format
   const isValidDateFormat = (dateString) => {
     const regex = /^\d{2}\.\d{2}\.\d{4}$/;
@@ -140,15 +190,15 @@ const AvailabilityChecker = () => {
     const errors = [];
 
     if (!checkData.zeitraum_von) {
-      errors.push('Start date is required');
+      errors.push('Startdatum ist erforderlich');
     } else if (!isValidDateFormat(checkData.zeitraum_von)) {
-      errors.push('Start date must be in format dd.mm.yyyy');
+      errors.push('Startdatum muss im Format tt.mm.jjjj eingegeben werden');
     }
 
     if (!checkData.zeitraum_bis) {
-      errors.push('End date is required');
+      errors.push('Enddatum ist erforderlich');
     } else if (!isValidDateFormat(checkData.zeitraum_bis)) {
-      errors.push('End date must be in format dd.mm.yyyy');
+      errors.push('Enddatum muss im Format tt.mm.jjjj eingegeben werden');
     }
 
     // Check if end date is after start date
@@ -161,19 +211,19 @@ const AvailabilityChecker = () => {
       const endDate = new Date(endYear, endMonth - 1, endDay);
       
       if (endDate < startDate) {
-        errors.push('End date must be after start date');
+        errors.push('Enddatum muss nach dem Startdatum liegen');
       }
     }
 
     if (!checkData.belegung || checkData.belegung.trim() === '') {
-      errors.push('Occupation/Industry is required');
+      errors.push('Belegung/Branche ist erforderlich');
     }
 
     // FIXED: Validate that the selected occupation exists in available categories
     if (checkData.belegung && categories.length > 0) {
       const validCategory = categories.find(cat => cat.name === checkData.belegung);
       if (!validCategory) {
-        errors.push('Please select a valid occupation/industry from the list');
+        errors.push('Bitte wählen Sie eine gültige Belegung/Branche aus der Liste');
       }
     }
 
@@ -219,16 +269,16 @@ const AvailabilityChecker = () => {
         
         setMessage({ 
           type: 'success', 
-          text: `Check completed: ${message}`
+          text: `Prüfung abgeschlossen: ${message}`
         });
         
         console.log('Availability check successful:', data.data);
       } else {
-        setMessage({ type: 'error', text: data.message || 'Error during availability check' });
+        setMessage({ type: 'error', text: data.message || 'Fehler bei der Verfügbarkeitsprüfung' });
       }
     } catch (error) {
       console.error('Error during availability check:', error);
-      setMessage({ type: 'error', text: 'Network error during availability check' });
+      setMessage({ type: 'error', text: 'Netzwerkfehler bei der Verfügbarkeitsprüfung' });
     } finally {
       setLoading(false);
     }
@@ -239,7 +289,7 @@ const AvailabilityChecker = () => {
       {/* Form */}
       <div className="bg-white p-6 rounded-lg shadow-md">
         <h1 className="text-2xl font-bold mb-6 text-gray-800">
-          🔍 Availability Check
+          🔍 Verfügbarkeitsprüfung
         </h1>
         
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -247,60 +297,77 @@ const AvailabilityChecker = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1 flex items-center gap-2">
-                📅 Start Date *
+                📅 Startdatum *
               </label>
               <DatePicker
                 value={checkData.zeitraum_von}
                 onChange={handleDateChange('zeitraum_von')}
-                placeholder="dd.mm.yyyy (e.g. 15.07.2024)"
+                placeholder="tt.mm.jjjj (z.B. 15.07.2024)"
                 name="zeitraum_von"
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">Format: dd.mm.yyyy</p>
+              <p className="text-xs text-gray-500 mt-1">Format: tt.mm.jjjj</p>
             </div>
             
             <div>
               <label className="block text-sm font-medium mb-1 flex items-center gap-2">
-                📅 End Date *
+                📅 Enddatum *
               </label>
               <DatePicker
                 value={checkData.zeitraum_bis}
                 onChange={handleDateChange('zeitraum_bis')}
-                placeholder="dd.mm.yyyy (e.g. 20.07.2024)"
+                placeholder="tt.mm.jjjj (z.B. 20.07.2024)"
                 name="zeitraum_bis"
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">Format: dd.mm.yyyy (automatically set to +12 months)</p>
+              <p className="text-xs text-gray-500 mt-1">Format: tt.mm.jjjj (automatisch auf +12 Monate gesetzt)</p>
             </div>
           </div>
 
-          {/* FIXED: Occupation/Industry - Proper Select Dropdown */}
+          {/* FIXED: Belegung/Branche - Durchsuchbares Dropdown */}
           <div>
             <label className="block text-sm font-medium mb-1 flex items-center gap-2">
-              🏢 Occupation/Industry *
+              🏢 Belegung/Branche *
             </label>
             {categoriesLoading ? (
               <div className="w-full p-3 border border-gray-300 rounded-md bg-gray-50 text-gray-500">
-                ⏳ Loading categories...
+                ⏳ Kategorien werden geladen...
               </div>
             ) : (
-              <select
-                name="belegung"
-                value={checkData.belegung}
-                onChange={handleSelectChange}
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white"
-                required
-              >
-                <option value="">-- Please select an occupation/industry --</option>
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.name}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <input
+                  type="text"
+                  name="belegung"
+                  value={checkData.belegung}
+                  onChange={handleSearchChange}
+                  onFocus={() => setShowDropdown(true)}
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white"
+                  placeholder="-- Bitte wählen Sie eine Belegung/Branche --"
+                  autoComplete="off"
+                  required
+                />
+                {showDropdown && filteredCategories.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    {filteredCategories.slice(0, 50).map(cat => (
+                      <div
+                        key={cat.id}
+                        onClick={() => handleCategorySelect(cat.name)}
+                        className="p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                      >
+                        {cat.name}
+                      </div>
+                    ))}
+                    {filteredCategories.length > 50 && (
+                      <div className="p-3 text-gray-500 text-sm text-center border-t border-gray-200">
+                        ... und {filteredCategories.length - 50} weitere Kategorien. Bitte verfeinern Sie Ihre Suche.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
             <p className="text-xs text-gray-500 mt-1">
-              Only available categories from the database can be selected
+              Nur verfügbare Kategorien aus der Datenbank können ausgewählt werden. Tippen Sie, um zu suchen.
             </p>
           </div>
 
@@ -319,7 +386,7 @@ const AvailabilityChecker = () => {
             disabled={loading || categoriesLoading}
             className="w-full bg-red-600 text-white py-3 px-6 rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {loading ? '⏳ Checking availability...' : '🔍 Check Availability'}
+            {loading ? '⏳ Verfügbarkeit wird geprüft...' : '🔍 Verfügbarkeit prüfen'}
           </button>
         </form>
       </div>
@@ -328,15 +395,15 @@ const AvailabilityChecker = () => {
       {results && (
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            📊 Availability Results for {results.belegung}
+            📊 Verfügbarkeitsergebnisse für {results.belegung}
           </h2>
           
           <div className="mb-6">
             <p className="text-gray-700 mb-2">
-              <strong>Period:</strong> {formatDateFromISO(results.zeitraum_von)} to {formatDateFromISO(results.zeitraum_bis)}
+              <strong>Zeitraum:</strong> {formatDateFromISO(results.zeitraum_von)} bis {formatDateFromISO(results.zeitraum_bis)}
             </p>
             <p className="text-gray-700">
-              <strong>Occupation:</strong> {results.belegung}
+              <strong>Belegung:</strong> {results.belegung}
             </p>
           </div>
 
@@ -346,21 +413,21 @@ const AvailabilityChecker = () => {
               <div className="text-3xl font-bold text-green-600 mb-2">
                 {results.available_places}
               </div>
-              <div className="text-sm text-green-700 font-medium">Available Places</div>
+              <div className="text-sm text-green-700 font-medium">Verfügbare Plätze</div>
             </div>
             
             <div className="text-center bg-red-50 p-4 rounded-lg border border-red-200">
               <div className="text-3xl font-bold text-red-600 mb-2">
                 {results.occupied_places}
               </div>
-              <div className="text-sm text-red-700 font-medium">Occupied Places</div>
+              <div className="text-sm text-red-700 font-medium">Belegte Plätze</div>
             </div>
             
             <div className="text-center bg-blue-50 p-4 rounded-lg border border-blue-200">
               <div className="text-3xl font-bold text-blue-600 mb-2">
                 {results.total_places}
               </div>
-              <div className="text-sm text-blue-700 font-medium">Total Places</div>
+              <div className="text-sm text-blue-700 font-medium">Gesamte Plätze</div>
             </div>
           </div>
 
